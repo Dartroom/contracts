@@ -1,0 +1,26 @@
+{
+  "name": "dartroom-contracts",
+  "version": "0.1.0",
+  "description": "A package that includes all Dartroom's smart contracts written in TEAL, with complete interfaces in TypeScript to interact with them.",
+  "main": "dist/index.js",
+  "types": "dist/index.d.ts",
+  "scripts": {
+    "build": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Dartroom/dartroom-contracts.git"
+  },
+  "keywords": [
+    "algorand, teal"
+  ],
+  "author": "Stef de Groot",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/Dartroom/dartroom-contracts/issues"
+  },
+  "homepage": "https://github.com/Dartroom/dartroom-contracts#readme",
+  "devDependencies": {
+    "typescript": "^4.7.4"
+  }
+}
