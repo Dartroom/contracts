@@ -5,7 +5,8 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc"
+    "build": "tsc",
+    "test": "jest"
   },
   "repository": {
     "type": "git",
@@ -21,6 +22,13 @@
   },
   "homepage": "https://github.com/Dartroom/dartroom-contracts#readme",
   "devDependencies": {
+    "@types/jest": "^28.1.6",
+    "jest": "^28.1.3",
+    "ts-jest": "^28.0.8",
+    "ts-node": "^10.9.1",
     "typescript": "^4.7.4"
+  },
+  "dependencies": {
+    "algosdk": "^1.19.0"
   }
 }
