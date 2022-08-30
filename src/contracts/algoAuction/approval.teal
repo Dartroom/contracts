@@ -59,7 +59,7 @@ err
 create_app:
 
   txn NumAppArgs
-  int 5
+  int 6
   ==
 
   txn NumAccounts
@@ -73,18 +73,28 @@ create_app:
   &&
 
   txn ApplicationArgs 0
+  btoi
   int 0
   >
   &&
 
   txn ApplicationArgs 1
+  btoi
   callsub divisible_by_100
   &&
 
   txn ApplicationArgs 2
+  btoi
+  callsub divisible_by_100
+  &&
+
   txn ApplicationArgs 3
-  +
+  btoi
   txn ApplicationArgs 4
+  btoi
+  +
+  txn ApplicationArgs 5
+  btoi
   +
   int 100
   ==
@@ -109,6 +119,12 @@ set_app_global_state:
   int 0
   app_global_put
 
+  // The minimum increase of bids after the reserve price gets matched. (Must be a multiple of the total amount of shares.
+  byte "minimum_bid_increase"
+  txn ApplicationArgs 1
+  btoi
+  app_global_put
+
   // The start value is the seller's address to show that there are no bids and the auction can still be deleted.
   byte "highest_bidder"
   global CreatorAddress
@@ -116,7 +132,7 @@ set_app_global_state:
 
   // The start value is the reserve price that the first bid must match. Secondary bids will need to be higher than this value.
   byte "highest_bid"
-  txn ApplicationArgs 1
+  txn ApplicationArgs 2
   btoi
   app_global_put
 
@@ -142,17 +158,17 @@ set_app_global_state:
 
   // The percentage of the sale rewards that get sent to the seller.
   byte "seller_share"
-  txn ApplicationArgs 2
+  txn ApplicationArgs 3
   app_global_put
 
   // The percentage of the sale rewards that get sent to the artist (royalty).
   byte "artist_share"
-  txn ApplicationArgs 3
+  txn ApplicationArgs 4
   app_global_put
 
   // The percentage of the sale rewards that get sent to the manager (commission/platform fee).
   byte "manager_share"
-  txn ApplicationArgs 4
+  txn ApplicationArgs 5
   app_global_put
 
   int 1
@@ -373,34 +389,13 @@ bid:
     +
     store 0
 
-    load 0
-    gtxns TypeEnum
-    int pay
-    ==
-    &&
-
-    load 0
-    gtxns Fee
-    int 0
-    ==
-    &&
-
-    load 0
-    gtxns Receiver
-    global CurrentApplicationAddress
-    ==
-    &&
+    callsub check_base_bid_params
 
     load 0
     gtxns Amount
     byte "highest_bid"
     app_global_get
     >=
-    &&
-
-    load 0
-    gtxns Amount
-    callsub divisible_by_100
     &&
 
     bnz set_primary_bid
@@ -462,23 +457,7 @@ bid:
     +
     store 0
 
-    load 0
-    gtxns TypeEnum
-    int pay
-    ==
-    &&
-
-    load 0
-    gtxns Fee
-    int 0
-    ==
-    &&
-
-    load 0
-    gtxns Receiver
-    global CurrentApplicationAddress
-    ==
-    &&
+    callsub check_base_bid_params
 
     load 0
     gtxns Amount
@@ -489,7 +468,9 @@ bid:
 
     load 0
     gtxns Amount
-    callsub divisible_by_100
+    byte "minimum_bid_increase"
+    app_global_get
+    >=
     &&
 
     bnz set_secondary_bid
@@ -713,12 +694,6 @@ handle_closeout:
   return 
 //
 
-// allow opt out of the contracts usages of the callers local storage (Not used in this contract)
-handle_closeout:
-  int 0
-  return 
-//
-
 // allow for contract updates (Not used in this contract)
 handle_updateapp:
   int 0
@@ -916,4 +891,31 @@ set_algorand_close_out_params:
   retsub
 //
 
-// extract base bid checks
+//
+check_base_bid_params:
+
+  load 0
+  gtxns TypeEnum
+  int pay
+  ==
+  &&
+
+  load 0
+  gtxns Fee
+  int 0
+  ==
+  &&
+
+  load 0
+  gtxns Receiver
+  global CurrentApplicationAddress
+  ==
+  &&
+
+  load 0
+  gtxns Amount
+  callsub divisible_by_100
+  &&
+
+  retsub
+//

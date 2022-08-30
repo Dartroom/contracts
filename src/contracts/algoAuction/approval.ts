@@ -1,3 +1,923 @@
 export default `
 #pragma version 6
+
+// on creation (id is still 0) set the intial values
+txn ApplicationID
+int 0
+==
+
+bnz create_app
+
+txn OnCompletion
+int NoOp
+==
+
+callsub check_rekey_to
+callsub check_close_to
+
+bnz handle_noop
+
+txn OnCompletion
+int OptIn
+==
+
+callsub check_rekey_to
+callsub check_close_to
+
+bnz handle_optin
+
+txn OnCompletion
+int CloseOut
+==
+
+callsub check_rekey_to
+callsub check_close_to
+
+bnz handle_closeout
+
+txn OnCompletion
+int UpdateApplication
+==
+
+callsub check_rekey_to
+callsub check_close_to
+
+bnz handle_updateapp
+
+txn OnCompletion
+int DeleteApplication
+==
+
+callsub check_rekey_to
+callsub check_close_to
+
+bnz handle_deleteapp
+
+// Unexpected OnCompletion value. Should be unreachable.
+err
+
+// Create auction contract
+create_app:
+
+  txn NumAppArgs
+  int 6
+  ==
+
+  txn NumAccounts
+  int 3
+  ==
+  &&
+
+  txn NumAssets
+  int 1
+  ==
+  &&
+
+  txn ApplicationArgs 0
+  btoi
+  int 0
+  >
+  &&
+
+  txn ApplicationArgs 1
+  btoi
+  callsub divisible_by_100
+  &&
+
+  txn ApplicationArgs 2
+  btoi
+  callsub divisible_by_100
+  &&
+
+  txn ApplicationArgs 3
+  btoi
+  txn ApplicationArgs 4
+  btoi
+  +
+  txn ApplicationArgs 5
+  btoi
+  +
+  int 100
+  ==
+  &&
+
+  bnz set_app_global_state
+
+  return
+//
+
+// Set starting values in global state
+set_app_global_state:
+
+  // Duration of the auction in blocks, time will start at first bid.
+  byte "duration"
+  txn ApplicationArgs 0
+  btoi
+  app_global_put
+
+  // Will be updated to the actual end time in blocks when the first bid occurs.
+  byte "end_round"
+  int 0
+  app_global_put
+
+  // The minimum increase of bids after the reserve price gets matched. (Must be a multiple of the total amount of shares.
+  byte "minimum_bid_increase"
+  txn ApplicationArgs 1
+  btoi
+  app_global_put
+
+  // The start value is the seller's address to show that there are no bids and the auction can still be deleted.
+  byte "highest_bidder"
+  global CreatorAddress
+  app_global_put
+
+  // The start value is the reserve price that the first bid must match. Secondary bids will need to be higher than this value.
+  byte "highest_bid"
+  txn ApplicationArgs 2
+  btoi
+  app_global_put
+
+  // Index of the ASA that is getting auctioned by the contract.
+  byte "nft_index"
+  txn Assets 0
+  app_global_put
+
+  // Address to which the contract will send the seller's share of the sale rewards. By default, this should be the seller's address but could be used to payout their share to a charity or cold wallet.
+  byte "seller_payout_address"
+  txn Accounts 0
+  app_global_put
+
+  // Address to which the contract will send the artist's share of the sale rewards. By default, this should be the asset creator's address but could be used to payout their share to a splitting contract in case of shared collections.
+  byte "artist_payout_address"
+  txn Accounts 1
+  app_global_put
+
+  // Address of the platform selling the NFT.
+  byte "manager_address"
+  txn Accounts 2
+  app_global_put
+
+  // The percentage of the sale rewards that get sent to the seller.
+  byte "seller_share"
+  txn ApplicationArgs 3
+  app_global_put
+
+  // The percentage of the sale rewards that get sent to the artist (royalty).
+  byte "artist_share"
+  txn ApplicationArgs 4
+  app_global_put
+
+  // The percentage of the sale rewards that get sent to the manager (commission/platform fee).
+  byte "manager_share"
+  txn ApplicationArgs 5
+  app_global_put
+
+  int 1
+  return
+//
+
+//  branch contract functions based on ABI function hash
+handle_noop:
+
+  txn ApplicationArgs 0
+  method "set()void"
+  ==
+
+  bnz set
+    
+  txn ApplicationArgs 0
+  method "bid()void"
+  ==
+
+  bnz bid
+
+  txn ApplicationArgs 0
+  method "claimNFT()void"
+  ==
+
+  bnz claim_nft
+
+  txn ApplicationArgs 0
+  method "claimShares()void"
+  ==
+
+  bnz claim_shares
+//
+
+//
+set:
+  
+  // The first transaction must fund the contract with 0.2 Algo to enable it to opt into the NFT ASA.
+  txn GroupIndex
+  int 1
+  -
+  store 0
+
+  load 0
+  gtxns TypeEnum
+  int pay
+  ==
+  &&
+
+  load 0
+  gtxns Fee
+  int 4000
+  ==
+  &&
+
+  load 0
+  gtxns Amount
+  int 200000 
+  ==
+  &&
+
+  load 0
+  gtxns Sender
+  global CreatorAddress
+  ==
+  &&
+
+  load 0
+  gtxns Receiver
+  global CurrentApplicationAddress
+  ==
+  &&
+
+  // The second transaction calls the contract, which will opt into the NFT ASA with an inner transaction.
+  txn TypeEnum
+  int appl
+  ==
+  &&
+
+  txn Fee
+  int 0
+  ==
+  &&
+
+  txn NumAppArgs
+  int 1
+  ==
+  &&
+
+  txn Sender
+  global CreatorAddress
+  ==
+  &&
+
+  // The third transaction must send a token of the NFT ASA to the contract address.
+  txn GroupIndex
+  int 1
+  +
+  store 0
+
+  load 0
+  gtxns TypeEnum
+  int axfer
+  ==
+  &&
+
+  load 0
+  gtxns Fee
+  int 0
+  ==
+  &&
+
+  load 0
+  gtxns Sender
+  global CreatorAddress
+  ==
+  &&
+
+  load 0
+  gtxns AssetReceiver
+  global CurrentApplicationAddress
+  ==
+  &&
+
+  load 0
+  gtxns XferAsset
+  byte "nft_index"
+  app_global_get
+  ==
+  &&
+
+  load 0
+  gtxns AssetAmount
+  int 1
+  ==
+  &&
+
+  global CurrentApplicationAddress
+  callsub opted_into_nft
+  int 0
+  ==
+  &&
+
+  bnz contract_optin
+
+  return
+
+  // Opt the contract into the NFT asset with an inner transaction.
+  contract_optin:
+
+    itxn_begin
+
+    int axfer
+    itxn_field TypeEnum
+
+    byte "nft_index"
+    app_global_get
+    itxn_field XferAsset
+
+    global CurrentApplicationAddress
+    itxn_field AssetReceiver
+
+    int 0
+    itxn_field AssetAmount
+
+    itxn_submit
+
+    int 1
+    return
+  //
+//
+
+//
+bid:
+
+  byte "highest_bidder"
+  app_global_get
+  global CreatorAddress
+  ==
+
+  bnz primary_bid
+
+  byte "highest_bidder"
+  app_global_get
+  global CreatorAddress
+  !=
+
+  global Round
+  byte "end_round"
+  app_global_get
+  <=
+  &&
+
+  bnz secondary_bid
+
+  return
+
+  //
+  primary_bid:
+
+    // The first transaction calls the contract and pays the fees.
+    txn TypeEnum
+    int appl
+    ==
+
+    txn Fee
+    int 2000
+    ==
+
+    txn Sender
+    global CreatorAddress
+    !=
+    &&
+
+    // The second transaction sends the bid funds to the auction contract.
+    txn GroupIndex
+    int 1
+    +
+    store 0
+
+    callsub check_base_bid_params
+
+    load 0
+    gtxns Amount
+    byte "highest_bid"
+    app_global_get
+    >=
+    &&
+
+    bnz set_primary_bid
+
+    return
+
+    //
+    set_primary_bid:
+
+      byte "highest_bidder"
+      load 0
+      gtxns Sender
+      app_global_put
+
+      byte "highest_bid"
+      load 0
+      gtxns Amount
+      app_global_put
+
+      global Round
+      byte "duration"
+      app_global_get
+      +
+      byte "end_round"
+      swap
+      app_global_put
+
+      int 1
+      return
+    //
+  //
+
+  //
+  secondary_bid:
+
+    // The first transaction calls the contract and pays the fees.
+    txn TypeEnum
+    int appl
+    ==
+
+    txn Fee
+    int 4000
+    ==
+
+    txn Sender
+    global CreatorAddress
+    !=
+    &&
+
+    txn Sender
+    byte "highest_bidder"
+    app_global_get
+    !=
+    &&
+
+    // The second transaction sends the bid funds to the auction contract.
+    txn GroupIndex
+    int 1
+    +
+    store 0
+
+    callsub check_base_bid_params
+
+    load 0
+    gtxns Amount
+    byte "highest_bid"
+    app_global_get
+    >
+    &&
+
+    load 0
+    gtxns Amount
+    byte "minimum_bid_increase"
+    app_global_get
+    >=
+    &&
+
+    bnz set_secondary_bid
+
+    return
+
+    //
+    set_secondary_bid:
+
+      itxn_begin
+
+      int pay
+      itxn_field TypeEnum
+
+      byte "highest_bidder"
+      app_global_get
+      itxn_field Receiver
+
+      byte "highest_bid"
+      app_global_get
+      itxn_field Amount
+
+      itxn_submit
+
+      byte "highest_bidder"
+      load 0
+      gtxns Sender
+      app_global_put
+
+      byte "highest_bid"
+      load 0
+      gtxns Amount
+      app_global_put
+
+      global Round
+      int 400
+      +
+      byte "end_round"
+      app_global_get
+      >=
+
+      bnz add_rounds
+
+      int 1
+      return
+
+      //
+      add_rounds:
+
+        global Round
+        int 400
+        +
+        byte "end_round"
+        swap
+        app_global_put
+
+        int 1
+        return
+      //
+    //
+  //
+//
+
+//
+claim_nft:
+
+  txn TypeEnum
+  int appl
+  ==
+  &&
+
+  txn Fee
+  int 2000
+  ==
+  &&
+
+  callsub did_auction_end
+  &&
+
+  bnz payout_nft
+
+  return
+
+  //
+  payout_nft:
+
+    itxn_begin
+
+    int axfer
+    itxn_field TypeEnum
+
+    byte "nft_index"
+    app_global_get 
+    itxn_field XferAsset
+
+    byte "highest_bidder"
+    app_global_get
+    itxn_field AssetReceiver
+
+    global CurrentApplicationAddress
+    byte "nft_index"
+    app_global_get
+    asset_holding_get AssetBalance
+    pop
+    itxn_field AssetAmount
+
+    itxn_submit
+
+    int 1
+    return
+  //
+//
+
+//
+claim_shares:
+
+  txn TypeEnum
+  int appl
+  ==
+
+  txn Fee
+  int 4000
+  ==
+  &&
+
+  callsub did_auction_end
+  &&
+
+  byte "seller_share"
+  app_global_get
+  byte "artist_share"
+  app_global_get
+  +
+  byte "manager_share"
+  app_global_get
+  +
+  int 100
+  ==
+  &&
+
+  bnz payout_shares
+
+  return
+
+  //
+  payout_shares:
+
+    itxn_begin
+
+    int pay
+    itxn_field TypeEnum
+
+    byte "seller_payout_address"
+    app_global_get
+    itxn_field Receiver
+
+    callsub share_value
+    byte "seller_share"
+    app_global_get
+    *
+    itxn_field Amount
+
+    itxn_next
+
+    int pay
+    itxn_field TypeEnum
+
+    byte "artist_payout_address"
+    app_global_get
+    itxn_field Receiver
+
+    callsub share_value
+    byte "artist_share"
+    app_global_get
+    *
+    itxn_field Amount
+
+    itxn_next
+
+    int pay
+    itxn_field TypeEnum
+
+    byte "manager_address"
+    app_global_get
+    itxn_field Receiver
+
+    callsub share_value
+    byte "manager_share"
+    app_global_get
+    *
+    itxn_field Amount
+
+    itxn_submit
+
+    byte "seller_share"
+    int 0
+    app_global_put
+
+    byte "artist_share"
+    int 0
+    app_global_put
+
+    byte "manager_share"
+    int 0
+    app_global_put
+
+    int 1
+    return
+  //
+//
+
+// allow contract to use callers local storage (Not used in this contract)
+handle_optin:
+  int 0
+  return 
+//
+
+// allow opt out of the contracts usages of the callers local storage (Not used in this contract)
+handle_closeout:
+  int 0
+  return 
+//
+
+// allow for contract updates (Not used in this contract)
+handle_updateapp:
+  int 0
+  return 
+//
+
+// set requirments for the contracts deletion
+handle_deleteapp:
+
+  global CreatorAddress
+  txn Sender
+  ==
+
+  txn Fee
+  int 3000
+  ==
+  &&
+
+  byte "seller_share"
+  app_global_get
+  int 0
+  ==
+
+  byte "artist_share"
+  app_global_get
+  int 0
+  ==
+  &&
+
+  byte "manager_share"
+  app_global_get
+  int 0
+  ==
+  &&
+
+  callsub did_auction_end
+  &&
+
+  global CurrentApplicationAddress
+  byte "nft_index"
+  app_global_get
+  asset_holding_get AssetBalance
+  pop
+  int 0
+  ==
+  &&
+
+  byte "highest_bidder"
+  app_global_get
+  global CreatorAddress
+  ==
+  ||
+  &&
+
+  bnz close_out
+
+  return
+  //
+  close_out:
+
+    global CurrentApplicationAddress
+    callsub opted_into_nft
+
+    bnz close_out_all
+
+    int 1
+
+    bnz close_out_algorand
+
+    return
+    //
+    close_out_all:
+
+      itxn_begin
+
+      callsub set_algorand_close_out_params
+
+      itxn_next
+
+      int axfer
+      itxn_field TypeEnum
+
+      byte "nft_index"
+      app_global_get 
+      itxn_field XferAsset
+
+      global CreatorAddress
+      itxn_field AssetReceiver
+
+      global CreatorAddress
+      itxn_field AssetCloseTo
+
+      itxn_submit
+
+      int 1
+      return
+    //
+    //
+    close_out_algorand:
+
+      itxn_begin
+
+      callsub set_algorand_close_out_params
+
+      itxn_submit
+
+      int 1
+      return
+    //
+  //
+//
+
+// Make sure AssetCloseTo and CloseRemainderTo are not set
+check_close_to:
+
+  txn AssetCloseTo
+  global ZeroAddress
+  ==
+  &&
+
+  txn CloseRemainderTo 
+  global ZeroAddress
+  ==
+  &&
+
+  retsub
+//
+
+// Make sure RekeyTo is not set
+check_rekey_to:
+
+  txn RekeyTo
+  global ZeroAddress
+  ==
+  &&
+
+  retsub
+//
+
+// Ensure the reward is divisible by 100 to allow for a 1% granularity in the payout share settings. Increase to 1000 to allow for 0.1%, etc.
+divisible_by_100:
+  int 100
+  %
+  int 0
+  ==
+  retsub
+//
+
+// Ensure the address has opted into the NFT ASA.
+opted_into_nft:
+  byte "nft_index"
+  app_global_get
+  asset_holding_get AssetBalance
+  swap
+  pop
+  retsub
+//
+
+// Make sure the auction was activated and has since ended.
+did_auction_end:
+
+  global Round
+  byte "end_round"
+  app_global_get
+  >
+
+  retsub
+//
+
+
+// Get the value of a single share (1%)
+share_value:
+  byte "highest_bid"
+  app_global_get
+  int 100
+  /
+  retsub
+//
+
+//
+set_algorand_close_out_params:
+
+  int pay
+  itxn_field TypeEnum
+
+  global CreatorAddress
+  itxn_field Receiver
+
+  int 0
+  itxn_field Amount
+
+  global CreatorAddress
+  itxn_field CloseRemainderTo
+
+  retsub
+//
+
+//
+check_base_bid_params:
+
+  load 0
+  gtxns TypeEnum
+  int pay
+  ==
+  &&
+
+  load 0
+  gtxns Fee
+  int 0
+  ==
+  &&
+
+  load 0
+  gtxns Receiver
+  global CurrentApplicationAddress
+  ==
+  &&
+
+  load 0
+  gtxns Amount
+  callsub divisible_by_100
+  &&
+
+  retsub
+//
 `
