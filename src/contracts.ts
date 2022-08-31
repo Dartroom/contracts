@@ -1,8 +1,12 @@
-import { Indexer, Algodv2, BaseHTTPClient, Transaction } from "algosdk"
+import algosdk, { Indexer, Algodv2, BaseHTTPClient, Transaction } from "algosdk"
 import { AlgodTokenHeader, CustomTokenHeader, IndexerTokenHeader } from "algosdk/dist/types/src/client/urlTokenBaseHTTPClient"
 
 import deployAuction, { DeployAuctionParams } from "./interface/deployAuction"
 import setupAuction, { SetupAuctionParams } from "./interface/setupAuction"
+import placeAuctionBid, { BidParams } from "./interface/placeAuctionBid"
+import claimAuctionNFT, { ClaimNFTParams } from "./interface/claimAuctionNFT"
+import claimAuctionShares, { ClaimAuctionSharesParams } from "./interface/claimAuctionShares"
+import destoryAuction, { DestoryAuctionParams } from "./interface/destoryAuction"
 import getAuctionGlobalState, { GetAuctionParams } from "./interface/getAuctionGlobalState"
 import getAuctionInfo from "./interface/getAuctionInfo"
 
@@ -76,6 +80,60 @@ export default class Contracts {
    */
   setupAuction (params: SetupAuctionParams) {
     return setupAuction(this, params)
+  }
+
+  /**
+   * Generates transactions to bid on an existing auction contract. The function will check whether the bid is primary or secondary and modify the transactions accordingly.
+   * 
+   * - txns[0]: `appl` - call the smart contract to update the auction
+   * - txns[1]: `pay` or `axfer` - tranfer the bid to the contract address
+   * 
+   * @param {number} params.appId - Application index of the auction contract.
+   * @param {number} params.amount - The bid amount in either Algo or the auction currency ASA.
+   * @param {string} params.bidderAddress - The Algorand address placing the bid.
+   * @return Promise<algosdk.Transaction[]>
+   */
+  placeAuctionBid (params: BidParams) {
+    return placeAuctionBid(this, params)
+  }
+
+  /**
+   * Generates transactions to claim the NFT out of the auction contract. If the auction winner has not yet opted into the NFT, the function will return an opt-in transaction in addition to the claim transaction.
+   * 
+   * - tnxs[0]: `axfer` - opt-in transaction
+   * - txns[0 / 1]: `appl` - call the smart contract to claim the NFT
+   * 
+   * @param {number} params.appId - Application index of the auction contract.
+   * @param {string} params.senderAddress - Address of the account sending the transaction (does not have to be the same address as the auction winner)
+   * @returns Promise<algosdk.Transaction[]>
+   */
+  claimAuctionNFT (params: ClaimNFTParams) {
+    return claimAuctionNFT(this, params)
+  }
+
+  /**
+   * Generates transactions to distribute the funds earned by auction to the shareholders. In the case of Algo auctions, all shares will be paid out at once. For ASA currency auctions, only the shares of shareholders who already opted into the auction currency will be paid out.
+   * 
+   * - txns[0]: `appl` - Call the smart contract to distribute the funds
+   * 
+   * @param {number} params.appId - Application index of the auction contract.
+   * @param {string} params.senderAddress - Address of the account sending the transaction
+   * @returns 
+   */
+  claimAuctionShares (params: ClaimAuctionSharesParams) {
+    return claimAuctionShares(this, params)
+  }
+
+  /**
+   * Generates transactions to destroy an existing auction contract. Destroying the contract will close out (return) all the contract assets back to the auction creator.
+   * 
+   * Destroying an auction is only available if there are either no bids placed yet, or both the sale funds and the NFT have been claimed after the end of an auction.
+   * 
+   * @param {number} params.appId - Application index of the auction contract.
+   * @return Promise<algosdk.Transaction[]>
+   */
+  destoryAuction (params: DestoryAuctionParams) {
+    return destoryAuction(this, params)
   }
   
   /**

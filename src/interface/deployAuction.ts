@@ -55,12 +55,12 @@ export default async function deployContract({ algod }: Provider, {
     throw new Error('The nftIndex must be a positive integer.')
   }
   
-  if ((reservePrice >= 100) && (reservePrice % 100 === 0)) {
+  if ((reservePrice < 100) || (reservePrice % 100 !== 0)) {
     throw new Error('The reserve price should be at least 100 base units of the currency.')
   }
 
   if (minBidIncrease) {
-    if ((minBidIncrease >= 100) && (minBidIncrease % 100 === 0)) {
+    if ((minBidIncrease < 100) || (minBidIncrease % 100 !== 0)) {
       throw new Error('The minimum bid increase should be at least 100 base units of the currency.')
     }
   } else {
@@ -72,7 +72,7 @@ export default async function deployContract({ algod }: Provider, {
   }
 
   if (duration) {
-    if (duration < 0 || !Number.isInteger(currencyIndex)) {
+    if (duration < 0 || !Number.isInteger(duration)) {
       throw new Error('The duration must be a positive integer.')
     }
   } else {
@@ -114,8 +114,6 @@ export default async function deployContract({ algod }: Provider, {
     // min balance base of 0,1 Algo
     // min balance total price: 0,528 Algo
 
-    console.log(approvalProgram)
-
     let params = await algod.getTransactionParams().do()
     params.fee = 1000
     params.flatFee = true
@@ -128,6 +126,7 @@ export default async function deployContract({ algod }: Provider, {
       algosdk.encodeUint64(artistShare),
       algosdk.encodeUint64(managerShare)
     ]
+
     const accounts = [sellerPayoutAddress, artistPayoutAddress, managerAddress]
     const foreignAssets = [nftIndex]
 

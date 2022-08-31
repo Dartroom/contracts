@@ -15,19 +15,21 @@ export default async function getAuctionGlobalState({ indexer }: Provider, { app
   const state = app.application.params['global-state']
 
   return {
-    sellerShare: getGlobalUint(state, 'seller share'),
-    artistShare: getGlobalUint(state, 'artist share'),
-    managerShare: getGlobalUint(state, 'manager share'),
-    duration: getGlobalUint(state, 'Duration'),
-    endRound: getGlobalUint(state, 'End round'),
-    nftIndex: getGlobalUint(state, 'nft index'),
-    currencyIndex: getGlobalUint(state, 'currency index'),
-    highestBid: getGlobalUint(state, 'Highest bid'),
-    payoutAddress: getGlobalAddress(state, 'payout address'),
-    highestBidder: getGlobalAddress(state, 'Highest bidder'),
-    managerAddress: getGlobalAddress(state, 'manager address'),
+    sellerShare: getGlobalUint(state, 'seller_share'),
+    artistShare: getGlobalUint(state, 'artist_share'),
+    managerShare: getGlobalUint(state, 'manager_share'),
+    duration: getGlobalUint(state, 'duration'),
+    endRound: getGlobalUint(state, 'end_round'),
+    nftIndex: getGlobalUint(state, 'nft_index'),
+    highestBid: getGlobalUint(state, 'highest_bid'),
+    minimumBidIncrease: getGlobalUint(state, 'minimum_bid_increase'),
+    sellerPayoutAddress: getGlobalAddress(state, 'seller_payout_address'),
+    artistPayoutAddress: getGlobalAddress(state, 'artist_payout_address'),
+    managerAddress: getGlobalAddress(state, 'manager_address'),
+    highestBidder: getGlobalAddress(state, 'highest_bidder'),
     contractAddress: getApplicationAddress(appId),
     creatorAddress: app.application.params.creator as string,
-    timeLeft: getGlobalUint(state, 'End round') - app['current-round'],
+    timeLeft: getGlobalUint(state, 'end_round') - app['current-round'],
+    currencyIndex: getGlobalUint(state, 'currency_index'),
   }
 }

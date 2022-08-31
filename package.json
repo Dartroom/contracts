@@ -29,6 +29,7 @@
     "typescript": "^4.7.4"
   },
   "dependencies": {
-    "algosdk": "^1.19.0"
+    "algosdk": "^1.19.0",
+    "js-sha512": "^0.8.0"
   }
 }

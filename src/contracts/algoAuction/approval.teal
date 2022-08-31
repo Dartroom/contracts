@@ -143,32 +143,35 @@ set_app_global_state:
 
   // Address to which the contract will send the seller's share of the sale rewards. By default, this should be the seller's address but could be used to payout their share to a charity or cold wallet.
   byte "seller_payout_address"
-  txn Accounts 0
+  txn Accounts 1
   app_global_put
 
   // Address to which the contract will send the artist's share of the sale rewards. By default, this should be the asset creator's address but could be used to payout their share to a splitting contract in case of shared collections.
   byte "artist_payout_address"
-  txn Accounts 1
+  txn Accounts 2
   app_global_put
 
   // Address of the platform selling the NFT.
   byte "manager_address"
-  txn Accounts 2
+  txn Accounts 3
   app_global_put
 
   // The percentage of the sale rewards that get sent to the seller.
   byte "seller_share"
   txn ApplicationArgs 3
+  btoi
   app_global_put
 
   // The percentage of the sale rewards that get sent to the artist (royalty).
   byte "artist_share"
   txn ApplicationArgs 4
+  btoi
   app_global_put
 
   // The percentage of the sale rewards that get sent to the manager (commission/platform fee).
   byte "manager_share"
   txn ApplicationArgs 5
+  btoi
   app_global_put
 
   int 1
@@ -216,7 +219,6 @@ set:
   gtxns TypeEnum
   int pay
   ==
-  &&
 
   load 0
   gtxns Fee
@@ -377,6 +379,7 @@ bid:
     txn Fee
     int 2000
     ==
+    &&
 
     txn Sender
     global CreatorAddress
@@ -437,8 +440,9 @@ bid:
     ==
 
     txn Fee
-    int 4000
+    int 3000
     ==
+    &&
 
     txn Sender
     global CreatorAddress
@@ -540,7 +544,6 @@ claim_nft:
   txn TypeEnum
   int appl
   ==
-  &&
 
   txn Fee
   int 2000
@@ -769,10 +772,6 @@ handle_deleteapp:
 
       itxn_begin
 
-      callsub set_algorand_close_out_params
-
-      itxn_next
-
       int axfer
       itxn_field TypeEnum
 
@@ -785,6 +784,10 @@ handle_deleteapp:
 
       global CreatorAddress
       itxn_field AssetCloseTo
+
+      itxn_next
+
+      callsub set_algorand_close_out_params
 
       itxn_submit
 
