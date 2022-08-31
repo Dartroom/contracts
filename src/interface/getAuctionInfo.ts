@@ -11,9 +11,14 @@ interface Transaction {
     "asset-id": number,
     "close-amount": number,
     receiver: string
-  },
+  }
+  "payment-transaction": {
+    amount: number
+    "close-amount": number
+    receiver: string
+  }
   "confirmed-round": number,
-  "sender": string,
+  sender: string,
 }
 
 interface TransactionsInfo {
@@ -38,18 +43,37 @@ export default async function getAuctionInfo({ indexer, algod }: Provider, param
 
       const txns = txnsInfo.transactions
 
-      for (let i = 0; i < txns.length; i++) {
+      if (appState.currencyIndex === -1) {
 
-        if (
-          txns[i]['asset-transfer-transaction'] &&
-          txns[i]['asset-transfer-transaction']['asset-id'] === appState.currencyIndex && 
-          txns[i]['asset-transfer-transaction'].receiver === appState.contractAddress
-        ) {
-          bids.push({
-            amount: txns[i]["asset-transfer-transaction"].amount,
-            bidderAddress: txns[i].sender,
-            round: txns[i]["confirmed-round"]
-          })
+        for (let i = 0; i < txns.length; i++) {
+
+          if (
+            txns[i]['payment-transaction'] &&
+            txns[i]['payment-transaction'].receiver === appState.contractAddress &&
+            txns[i].sender !== appState.creatorAddress
+          ) {
+            bids.push({
+              amount: txns[i]["payment-transaction"].amount,
+              bidderAddress: txns[i].sender,
+              round: txns[i]["confirmed-round"]
+            })
+          }
+        }
+
+      } else {
+        for (let i = 0; i < txns.length; i++) {
+
+          if (
+            txns[i]['asset-transfer-transaction'] &&
+            txns[i]['asset-transfer-transaction']['asset-id'] === appState.currencyIndex && 
+            txns[i]['asset-transfer-transaction'].receiver === appState.contractAddress
+          ) {
+            bids.push({
+              amount: txns[i]["asset-transfer-transaction"].amount,
+              bidderAddress: txns[i].sender,
+              round: txns[i]["confirmed-round"]
+            })
+          }
         }
       }
     }
