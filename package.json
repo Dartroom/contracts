@@ -1,6 +1,6 @@
 {
   "name": "dartroom-contracts",
-  "version": "0.1.0",
+  "version": "0.1.0-alpha",
   "description": "A package that includes all Dartroom's smart contracts written in TEAL, with complete interfaces in TypeScript to interact with them.",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
@@ -31,5 +31,8 @@
   "dependencies": {
     "algosdk": "^1.19.0",
     "js-sha512": "^0.8.0"
+  },
+  "publishConfig": {
+    "registry": "https://npm.pkg.github.com"
   }
 }
