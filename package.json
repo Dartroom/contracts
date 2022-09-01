@@ -1,5 +1,5 @@
 {
-  "name": "dartroom-contracts",
+  "name": "@dartroom/dartroom-contracts",
   "version": "0.1.0-alpha",
   "description": "A package that includes all Dartroom's smart contracts written in TEAL, with complete interfaces in TypeScript to interact with them.",
   "main": "dist/index.js",
@@ -8,10 +8,7 @@
     "build": "tsc",
     "test": "jest"
   },
-  "repository": {
-    "type": "git",
-    "url": "git+https://github.com/Dartroom/dartroom-contracts.git"
-  },
+  "repository": "git://github.com/Dartroom/dartroom-contracts.git",
   "keywords": [
     "algorand, teal"
   ],
