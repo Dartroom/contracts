@@ -33,7 +33,7 @@ export default async function deployContract({ algod }: Provider, {
   minBidIncrease,
   currencyIndex,
   duration,
-}: DeployAuctionParams): TxnArray {
+}: DeployAuctionParams): Promise<TxnArray>  {
   if (
     !algosdk.isValidAddress(sellerAddress) || 
     !algosdk.isValidAddress(sellerPayoutAddress) || 

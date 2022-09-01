@@ -12,7 +12,7 @@ export interface ClaimAuctionSharesParams {
 export default async function claimAuctionShares({ algod, indexer }: Provider, { 
   appId, 
   senderAddress
-}: ClaimAuctionSharesParams): TxnArray {
+}: ClaimAuctionSharesParams): Promise<TxnArray>  {
   
   const state = await getAuctionGlobalState({ algod, indexer },{ appId })
 

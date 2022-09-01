@@ -14,7 +14,7 @@ export default async function placeAuctionBid({ algod, indexer }: Provider, {
   appId, 
   amount, 
   bidderAddress 
-}: BidParams): TxnArray {
+}: BidParams): Promise<TxnArray>  {
   
   const state = await getAuctionGlobalState({ algod, indexer },{ appId })
 

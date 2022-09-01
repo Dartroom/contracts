@@ -15,7 +15,7 @@ export interface Provider {
   algod: Algodv2
 }
 
-export type TxnArray = Promise<Array<Transaction>>
+export type TxnArray = Array<Transaction>
 
 export default class Contracts {
 

@@ -7,7 +7,7 @@ export interface DestoryAuctionParams {
   appId: number
 }
 
-export default async function destoryAuction({ algod, indexer }: Provider, { appId }:DestoryAuctionParams ): TxnArray {
+export default async function destoryAuction({ algod, indexer }: Provider, { appId }:DestoryAuctionParams ): Promise<TxnArray>  {
 
   const state = await getAuctionGlobalState({ algod, indexer },{ appId })
   const appNftBalance = await addressAssetBalance(indexer, state.contractAddress, state.nftIndex)

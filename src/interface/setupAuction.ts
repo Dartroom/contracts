@@ -8,7 +8,7 @@ export interface SetupAuctionParams {
   appId: number
 }
 
-export default async function setupAuction({ algod, indexer }: Provider, { appId }: SetupAuctionParams): TxnArray {
+export default async function setupAuction({ algod, indexer }: Provider, { appId }: SetupAuctionParams): Promise<TxnArray>  {
   
   const state = await getAuctionGlobalState({ algod, indexer },{ appId })
   const appNftBalance = await addressAssetBalance(indexer, state.contractAddress, state.nftIndex)

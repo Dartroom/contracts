@@ -12,7 +12,7 @@ export interface ClaimNFTParams {
 export default async function claimAuctionNFT({ algod, indexer }: Provider, { 
   appId, 
   senderAddress
-}: ClaimNFTParams): TxnArray {
+}: ClaimNFTParams): Promise<TxnArray> {
   
   const state = await getAuctionGlobalState({ algod, indexer },{ appId })
   const appNftBalance = await addressAssetBalance(indexer, state.contractAddress, state.nftIndex)
