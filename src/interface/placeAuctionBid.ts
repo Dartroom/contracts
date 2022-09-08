@@ -32,6 +32,8 @@ export default async function placeAuctionBid({ algod, indexer }: Provider, {
     }
   } else if (state.highestBidder === bidderAddress) {
     throw new Error('The highest bidder can not overbid.')
+  } else if (state.creatorAddress === bidderAddress) {
+    throw new Error('The creator of the auction can not participate in the auction.')
   } else if (state.highestBidder !== state.creatorAddress) {
     if (amount <= state.highestBid) {
       throw new Error('The bid is below or equal to the current highest bid.')

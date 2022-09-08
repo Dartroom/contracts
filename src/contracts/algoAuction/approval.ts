@@ -720,6 +720,7 @@ handle_deleteapp:
   app_global_get
   int 0
   ==
+  &&
 
   byte "artist_share"
   app_global_get
