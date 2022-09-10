@@ -751,7 +751,6 @@ handle_deleteapp:
   global CreatorAddress
   ==
   ||
-  &&
 
   bnz close_out
 

@@ -15,12 +15,12 @@ const c = new Contracts({
   }
 })
 
-const sellerAccount = algosdk.mnemonicToSecretKey('')
-const artistAccount = algosdk.mnemonicToSecretKey('')
-const buyerAccount = algosdk.mnemonicToSecretKey('')
-const managerAddress = ""
-const nftIndex = 0
-const appId = 0
+const sellerAccount = algosdk.mnemonicToSecretKey('surface hurry neglect setup grape tribe sniff exclude what wrap wave car scheme metal warm toy same glove any again wrong problem audit ability appear')
+const artistAccount = algosdk.mnemonicToSecretKey('oak tip snake spoil vendor screen total pull wise casual property slab armed large gravity piano human trick taste cube broccoli fabric weather abandon unaware')
+const buyerAccount = algosdk.mnemonicToSecretKey('space canal chaos traffic amateur tobacco atom holiday enroll sell unknown install pride render pulp rival waste name crop fossil fitness urban fruit about exit')
+const managerAddress = "IC6Q7LOQWCUYD3PQS2E43BEOIDVPTDBZHZ6T5VGEBLBCRQVOMYKSZBUU6I"
+const nftIndex = 67032510
+const appId = 109099200
 
 // healt()
 
@@ -43,41 +43,41 @@ async function healt () {
 
 jest.setTimeout(10000)
 
-test('deployAuction', async() => {
-  const appId = await deployAuction()
-  console.log(appId)
-  expect(typeof appId).toBe('number')
-})
+// test('deployAuction', async() => {
+//   const appId = await deployAuction()
+//   console.log(appId)
+//   expect(typeof appId).toBe('number')
+// })
 
-test('setAuction', async () => {
-  const confirmedRound = await setAuction()
-  console.log(confirmedRound)
-  expect(typeof confirmedRound).toBe('number')
-})
+// test('setAuction', async () => {
+//   const confirmedRound = await setAuction()
+//   console.log(confirmedRound)
+//   expect(typeof confirmedRound).toBe('number')
+// })
 
-test('PimaryBid', async () => {
-  const confirmedRound = await primaryBid()
-  console.log(confirmedRound)
-  expect(typeof confirmedRound).toBe('number')
-})
+// test('PimaryBid', async () => {
+//   const confirmedRound = await primaryBid()
+//   console.log(confirmedRound)
+//   expect(typeof confirmedRound).toBe('number')
+// })
 
-test('SecondaryBid', async () => {
-  const confirmedRound = await secondaryBid()
-  console.log(confirmedRound)
-  expect(typeof confirmedRound).toBe('number')
-})
+// test('SecondaryBid', async () => {
+//   const confirmedRound = await secondaryBid()
+//   console.log(confirmedRound)
+//   expect(typeof confirmedRound).toBe('number')
+// })
 
-test('ClaimNFT', async () => {
-  const confirmedRound = await claimNFT()
-  console.log(confirmedRound)
-  expect(typeof confirmedRound).toBe('number')
-})
+// test('ClaimNFT', async () => {
+//   const confirmedRound = await claimNFT()
+//   console.log(confirmedRound)
+//   expect(typeof confirmedRound).toBe('number')
+// })
 
-test('ClaimShares', async () => {
-  const confirmedRound = await claimShares()
-  console.log(confirmedRound)
-  expect(typeof confirmedRound).toBe('number')
-})
+// test('ClaimShares', async () => {
+//   const confirmedRound = await claimShares()
+//   console.log(confirmedRound)
+//   expect(typeof confirmedRound).toBe('number')
+// })
 
 test('destoryAuction', async () => {
   const confirmedRound = await destoryAuction()
@@ -85,11 +85,11 @@ test('destoryAuction', async () => {
   expect(typeof confirmedRound).toBe('number')
 })
 
-test('getInfo', async () => {
-  const info = await c.getAuctionInfo({ appId: appId })
-  console.log(info)
-  expect(typeof info?.duration).toBe('number')
-})
+// test('getInfo', async () => {
+//   const info = await c.getAuctionInfo({ appId: appId })
+//   console.log(info)
+//   expect(typeof info?.duration).toBe('number')
+// })
 
 async function deployAuction (): Promise<number> {
   const txns = await c.deployAuction({
