@@ -1,5 +1,5 @@
 import algosdk, { Indexer, Algodv2, BaseHTTPClient, Transaction } from "algosdk"
-import { AlgodTokenHeader, CustomTokenHeader, IndexerTokenHeader } from "algosdk/dist/types/src/client/urlTokenBaseHTTPClient"
+import { AlgodTokenHeader, CustomTokenHeader, IndexerTokenHeader } from "algosdk/src/client/urlTokenBaseHTTPClient"
 
 import deployAuction, { DeployAuctionParams } from "./interface/deployAuction"
 import setupAuction, { SetupAuctionParams } from "./interface/setupAuction"
@@ -17,7 +17,7 @@ export interface Provider {
 
 export type TxnArray = Array<Transaction>
 
-export default class Contracts {
+export class Contracts {
 
   indexer: Indexer
   algod: Algodv2

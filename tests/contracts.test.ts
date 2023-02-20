@@ -1,6 +1,6 @@
 import fs from 'fs'
 import algosdk from "algosdk"
-import Contracts from "../src/contracts"
+import { Contracts } from '../index'
 
 const c = new Contracts({
   indexer: {
@@ -15,9 +15,9 @@ const c = new Contracts({
   }
 })
 
-const sellerAccount = algosdk.mnemonicToSecretKey('surface hurry neglect setup grape tribe sniff exclude what wrap wave car scheme metal warm toy same glove any again wrong problem audit ability appear')
-const artistAccount = algosdk.mnemonicToSecretKey('oak tip snake spoil vendor screen total pull wise casual property slab armed large gravity piano human trick taste cube broccoli fabric weather abandon unaware')
-const buyerAccount = algosdk.mnemonicToSecretKey('space canal chaos traffic amateur tobacco atom holiday enroll sell unknown install pride render pulp rival waste name crop fossil fitness urban fruit about exit')
+const sellerAccount = algosdk.mnemonicToSecretKey('')
+const artistAccount = algosdk.mnemonicToSecretKey('')
+const buyerAccount = algosdk.mnemonicToSecretKey('')
 const managerAddress = "IC6Q7LOQWCUYD3PQS2E43BEOIDVPTDBZHZ6T5VGEBLBCRQVOMYKSZBUU6I"
 const nftIndex = 67032510
 const appId = 109099200
