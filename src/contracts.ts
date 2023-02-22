@@ -10,6 +10,8 @@ import destoryAuction, { DestoryAuctionParams } from "./interface/destoryAuction
 import getAuctionGlobalState, { GetAuctionParams } from "./interface/getAuctionGlobalState"
 import getAuctionInfo from "./interface/getAuctionInfo"
 
+import { FixedBid } from './interface/fixedBid.ts/index'
+
 export interface Provider {
   indexer: Indexer
   algod: Algodv2
@@ -21,6 +23,7 @@ export class Contracts {
 
   indexer: Indexer
   algod: Algodv2
+  fixedBid: typeof FixedBid
 
   constructor(provider: { 
     indexer: { 
@@ -44,6 +47,7 @@ export class Contracts {
       provider.algod.baseServer,
       provider.algod.portNet
     )
+    this.fixedBid = FixedBid
   }
   
   /**

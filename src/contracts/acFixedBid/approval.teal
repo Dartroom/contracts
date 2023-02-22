@@ -1,0 +1,119 @@
+#pragma version 8
+
+// on creation (id is still 0) set the intial values
+txn ApplicationID
+int 0
+==
+
+bnz create_app
+
+txn OnCompletion
+int NoOp
+==
+
+callsub check_rekey_to
+callsub check_close_to
+
+bnz handle_noop
+
+txn OnCompletion
+int OptIn
+==
+
+callsub check_rekey_to
+callsub check_close_to
+
+bnz handle_optin
+
+txn OnCompletion
+int CloseOut
+==
+
+callsub check_rekey_to
+callsub check_close_to
+
+bnz handle_closeout
+
+txn OnCompletion
+int UpdateApplication
+==
+
+callsub check_rekey_to
+callsub check_close_to
+
+bnz handle_updateapp
+
+txn OnCompletion
+int DeleteApplication
+==
+
+callsub check_rekey_to
+callsub check_close_to
+
+bnz handle_deleteapp
+
+// Unexpected OnCompletion value. Should be unreachable.
+err
+
+// Create auction contract
+create_app:
+  int 1
+  return
+//
+
+//  branch contract functions based on ABI function hash
+handle_noop:
+  int 1
+  return
+//
+
+// allow contract to use callers local storage (Not used in this contract)
+handle_optin:
+  int 0
+  return 
+//
+
+// allow opt out of the contracts usages of the callers local storage (Not used in this contract)
+handle_closeout:
+  int 0
+  return 
+//
+
+// allow for contract updates (Not used in this contract)
+handle_updateapp:
+  int 0
+  return 
+//
+
+// set requirments for the contracts deletion
+handle_deleteapp:
+  int 1
+  return
+  //
+
+// Make sure AssetCloseTo and CloseRemainderTo are not set
+check_close_to:
+
+  txn AssetCloseTo
+  global ZeroAddress
+  ==
+  &&
+
+  txn CloseRemainderTo 
+  global ZeroAddress
+  ==
+  &&
+
+  retsub
+//
+
+// Make sure RekeyTo is not set
+check_rekey_to:
+
+  txn RekeyTo
+  global ZeroAddress
+  ==
+  &&
+
+  retsub
+//
