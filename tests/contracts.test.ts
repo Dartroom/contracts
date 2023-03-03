@@ -22,6 +22,7 @@ const managerAddress = "IC6Q7LOQWCUYD3PQS2E43BEOIDVPTDBZHZ6T5VGEBLBCRQVOMYKSZBUU
 const nftIndex = 67032510
 const appId = 109099200
 
+
 // healt()
 
 async function healt () {

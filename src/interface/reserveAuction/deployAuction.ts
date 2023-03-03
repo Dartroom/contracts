@@ -1,9 +1,9 @@
 import algosdk from "algosdk"
-import clearState from "../contracts/algoAuction/clearState"
-import algoApproval from "../contracts/algoAuction/approval"
-import asaApproval from "../contracts/asaAuction/approval"
-import { Provider, TxnArray } from "../contracts"
-import { compileProgram } from "../functions/program"
+import clearState from "../../contracts/algoAuction/clearState"
+import algoApproval from "../../contracts/algoAuction/approval"
+import asaApproval from "../../contracts/asaAuction/approval"
+import { Provider, TxnArray } from "../../contracts"
+import { compileProgram } from "../../functions/program"
 
 export interface DeployAuctionParams {
   sellerAddress: string

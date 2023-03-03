@@ -8,4 +8,8 @@ async function compileProgram(client: Algodv2, programSource: string) {
   return compiledBytes;
 }
 
-export { compileProgram }
+function convertProgram(programSource: string) {
+  return new Uint8Array(Buffer.from(programSource, "base64"))
+}
+
+export { compileProgram, convertProgram }

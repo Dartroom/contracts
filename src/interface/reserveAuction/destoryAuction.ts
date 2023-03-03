@@ -1,15 +1,15 @@
 import algosdk from "algosdk";
-import { Provider, TxnArray } from "../contracts";
+import { Provider, TxnArray } from "../../contracts";
 import getAuctionGlobalState from './getAuctionGlobalState'
-import { addressAssetBalance } from "../functions/balance"
+import { addressAssetBalance } from "../../functions/balance"
 
 export interface DestoryAuctionParams {
   appId: number
 }
 
-export default async function destoryAuction({ algod, indexer }: Provider, { appId }:DestoryAuctionParams ): Promise<TxnArray>  {
+export default async function destoryAuction({ algod, indexer, MIN_BALANCE_FEE }: Provider, { appId }:DestoryAuctionParams ): Promise<TxnArray>  {
 
-  const state = await getAuctionGlobalState({ algod, indexer },{ appId })
+  const state = await getAuctionGlobalState({ algod, indexer, MIN_BALANCE_FEE },{ appId })
   const appNftBalance = await addressAssetBalance(indexer, state.contractAddress, state.nftIndex)
 
   if (appNftBalance !== -1 && state.endRound !== 0) {

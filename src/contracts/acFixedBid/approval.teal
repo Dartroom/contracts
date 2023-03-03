@@ -1,0 +1,861 @@
+#pragma version 8
+
+// on creation (id is still 0) set the intial values
+txn ApplicationID
+int 0
+==
+
+bnz create_app
+
+txn OnCompletion
+int NoOp
+==
+
+callsub check_rekey_to
+callsub check_close_to
+
+bnz handle_noop
+
+txn OnCompletion
+int OptIn
+==
+
+callsub check_rekey_to
+callsub check_close_to
+
+bnz handle_optin
+
+txn OnCompletion
+int CloseOut
+==
+
+callsub check_rekey_to
+callsub check_close_to
+
+bnz handle_closeout
+
+txn OnCompletion
+int UpdateApplication
+==
+
+callsub check_rekey_to
+callsub check_close_to
+
+bnz handle_updateapp
+
+txn OnCompletion
+int DeleteApplication
+==
+
+callsub check_rekey_to
+callsub check_close_to
+
+bnz handle_deleteapp
+
+// Unexpected OnCompletion value. Should be unreachable.
+err
+
+// Create auction contract
+create_app:
+  txn NumAppArgs
+  int 4
+  ==
+
+  txn NumAccounts
+  int 3
+  ==
+  &&
+
+  txn NumAssets
+  int 2
+  ==
+  &&
+
+  txn ApplicationArgs 0
+  btoi
+  int 0
+  >
+  &&
+
+  txn ApplicationArgs 0
+  btoi
+  callsub divisible_by_1000
+  &&
+
+  txn ApplicationArgs 1
+  btoi
+  txn ApplicationArgs 2
+  btoi
+  +
+  txn ApplicationArgs 3
+  btoi
+  +
+  int 1000
+  ==
+  &&
+
+  bnz set_app_global_state
+
+  err
+//
+
+// Set starting values in global state
+set_app_global_state:
+
+  // Unit price
+  byte "unit_price"
+  txn ApplicationArgs 0 
+  btoi
+  app_global_put
+
+  // Index of the ASA that is listed in the contract.
+  byte "nft_index"
+  txn Assets 0
+  app_global_put
+
+  // Index of the ASA currency that the NFT is priced in.
+  byte "currency_index"
+  txn Assets 1
+  app_global_put
+
+  // Address to which the contract will send the seller's share of the sale proceeds. By default, this should be the seller's address but could be used to payout their share to a charity or cold wallet.
+  byte "seller_payout_address"
+  txn Accounts 1
+  app_global_put
+
+  // Address to which the contract will send the royatly share of the sale proceeds. By default, this should be the asset creator's address but could be used to payout their share to a splitting contract in case of shared collections.
+  byte "royalty_payout_address"
+  txn Accounts 2
+  app_global_put
+
+  // Address to which the contract will send the mananger of the sale proceeds. By default, this should be the commission of the marketplace hosting the listing.
+  byte "manager_payout_address"
+  txn Accounts 3
+  app_global_put
+
+  // The percentage of the sale proceeds that get sent to the seller.
+  byte "seller_share"
+  txn ApplicationArgs 1
+  btoi
+  app_global_put
+
+  // The percentage of the sale proceeds that get sent to the royalty holder (creator).
+  byte "royalty_share"
+  txn ApplicationArgs 2
+  btoi
+  app_global_put
+
+  // The percentage of the sale proceeds that get sent to the manager (commission/platform fee).
+  byte "manager_share"
+  txn ApplicationArgs 3
+  btoi
+  app_global_put
+
+  int 1
+  return
+//
+
+//  branch contract functions based on ABI function hash
+handle_noop:
+
+  method "setup()void"
+  method "buy(uint64)void"
+  method "extract(uint64)void"
+  method "update_price(uint64)void"
+  txna ApplicationArgs 0
+  match setup buy extract update_price
+
+  err
+//
+
+// Setup the listing contract
+setup:
+
+  txn TypeEnum
+  int appl
+  ==
+
+  txn Fee
+  global MinTxnFee
+  int 3
+  *
+  ==
+  &&
+
+  txn Sender
+  global CreatorAddress
+  ==
+  &&
+
+  txn NumAccounts
+  int 2
+  ==
+  &&
+
+  bnz contract_optin
+
+  err
+//
+
+// Opt contract into the NFT and currency ASA's
+contract_optin:
+
+  // Revenue sinks are one of the solutions to deal with the opt in system on Algorand.
+  // With this system we setup a logic sig before the listing is created, which is setup to always be opted into the AC currency.
+  // In the event that the seller or royalty reciepient is no longer opted into the currency the contact will differt the funds to the sink.
+  // This means that a purchage of token from the contract will always go through, even if the share holders are not opted in.
+  // There is a seperate sink for each address/asa combination, and only the specific address can claim the funds afterwards.
+
+  // Address to which the contract will send the seller's share of the sale proceeds in the event that the seller is no longer opted into the AC.
+  byte "seller_revenue_sink"
+  txn Accounts 1
+  app_global_put
+
+  // Address to which the contract will send the royalty share of the sale proceeds in the event that the royalty address is no longer opted into the AC.
+  byte "royalty_revenue_sink"
+  txn Accounts 2
+  app_global_put
+
+  // Manager is expected to always be opted into the AC currency and therefore does not have a revenue sink.
+
+  itxn_begin
+
+  int axfer
+  itxn_field TypeEnum
+
+  byte "nft_index"
+  app_global_get
+  itxn_field XferAsset
+
+  global CurrentApplicationAddress
+  itxn_field AssetReceiver
+
+  int 0
+  itxn_field AssetAmount
+
+  int 0
+  itxn_field Fee
+
+  itxn_next
+  
+  int axfer
+  itxn_field TypeEnum
+
+  byte "currency_index"
+  app_global_get
+  itxn_field XferAsset
+
+  global CurrentApplicationAddress
+  itxn_field AssetReceiver
+
+  int 0
+  itxn_field AssetAmount
+
+  int 0
+  itxn_field Fee
+
+  itxn_submit
+
+  int 1
+  return
+//
+
+// Buy x amount of tokens from the contract
+buy:
+
+  callsub get_leading_txn_index
+  gtxns TypeEnum
+  int axfer
+  ==
+
+  callsub get_leading_txn_index
+  gtxns XferAsset
+  byte "currency_index"
+  app_global_get
+  ==
+  &&
+
+  callsub get_leading_txn_index
+  gtxns AssetReceiver
+  global CurrentApplicationAddress
+  ==
+  &&
+
+  byte "unit_price"
+  app_global_get
+  txn ApplicationArgs 1
+  btoi
+  *
+  callsub get_leading_txn_index
+  gtxns AssetAmount
+  ==
+  &&
+
+  txn Fee
+  global MinTxnFee
+  int 5
+  *
+  <=
+  &&
+
+  txn NumAppArgs
+  int 2
+  ==
+  && 
+
+  txn ApplicationArgs 1
+  btoi
+  int 0
+  >
+  &&
+
+  global CurrentApplicationAddress
+  callsub opted_into_nft
+  &&
+
+  txn ApplicationArgs 1
+  btoi
+  global CurrentApplicationAddress
+  byte "nft_index"
+  app_global_get
+  callsub asa_balance
+  <=
+  &&
+
+  bnz execute_buy
+
+  err
+//
+
+//
+execute_buy:
+
+  itxn_begin
+
+  // send share to seller
+  callsub set_seller_payout
+
+  // send share to royalty holder
+  callsub set_royalty_payout
+
+  // send share to manager
+  callsub set_manager_payout
+
+  // send NFTs to buyer
+  int axfer
+  itxn_field TypeEnum
+
+  int 0
+  itxn_field Fee
+
+  byte "nft_index"
+  app_global_get 
+  itxn_field XferAsset
+
+  txn ApplicationArgs 1
+  btoi
+  itxn_field AssetAmount
+
+  callsub get_leading_txn_index
+  gtxns Sender
+  itxn_field AssetReceiver
+
+  itxn_submit
+
+  int 1
+  return
+//
+
+// Extract x amount of tokens from the contract
+extract:
+
+  global CreatorAddress
+  txn Sender
+  ==
+
+  txn Fee
+  global MinTxnFee
+  int 2
+  *
+  <=
+  &&
+
+  txn NumAppArgs
+  int 2
+  ==
+  &&
+
+  txn ApplicationArgs 1
+  btoi
+  int 0
+  >
+  &&
+
+  global CurrentApplicationAddress
+  callsub opted_into_nft
+  &&
+
+  txn ApplicationArgs 1
+  btoi
+  global CurrentApplicationAddress
+  byte "nft_index"
+  app_global_get
+  callsub asa_balance
+  <=
+  &&
+
+  bnz payout_extract
+
+  err
+//
+
+// Send extract txn
+payout_extract:
+
+  itxn_begin
+
+  int axfer
+  itxn_field TypeEnum
+
+  int 0
+  itxn_field Fee
+
+  byte "nft_index"
+  app_global_get 
+  itxn_field XferAsset
+
+  txn ApplicationArgs 1
+  btoi
+  itxn_field AssetAmount
+
+  global CreatorAddress
+  itxn_field AssetReceiver
+
+  itxn_submit
+
+  int 1
+  return
+//
+
+// Update the unit price of a token
+update_price:
+
+  global CreatorAddress
+  txn Sender
+  ==
+
+  txn Fee
+  global MinTxnFee
+  ==
+  &&
+
+  txn NumAppArgs
+  int 2
+  ==
+  &&
+
+  txn ApplicationArgs 1
+  btoi
+  int 0
+  >
+  &&
+
+  txn ApplicationArgs 1
+  btoi
+  callsub divisible_by_1000
+  &&
+
+  bnz set_new_price
+
+  err
+//
+
+// Update the global state with the new price
+set_new_price:
+
+  byte "unit_price"
+  txn ApplicationArgs 1 
+  btoi
+  app_global_put
+
+  int 1
+  return
+//
+
+// allow contract to use callers local storage (Not used in this contract)
+handle_optin:
+  int 0
+  return 
+//
+
+// allow opt out of the contracts usages of the callers local storage (Not used in this contract)
+handle_closeout:
+  int 0
+  return 
+//
+
+// allow for contract updates (Not used in this contract)
+handle_updateapp:
+  int 0
+  return 
+//
+
+// set requirments for the contracts deletion
+handle_deleteapp:
+
+  global CreatorAddress
+  txn Sender
+  ==
+
+  txn Fee
+  global MinTxnFee
+  int 4
+  *
+  <=
+  &&
+
+  bnz close_out_txn
+
+  err
+  //
+
+// close out conctract
+close_out_txn:
+
+  global CurrentApplicationAddress
+  callsub opted_into_currency
+
+  global CurrentApplicationAddress
+  callsub opted_into_nft
+  &&
+
+  bnz close_out_all
+
+  int 1
+
+  bnz close_out_algorand
+
+  err
+//
+
+// close out all
+close_out_all:
+
+  itxn_begin
+
+  callsub set_nft_close_out_params
+
+  itxn_next
+
+  callsub set_currency_close_out_params
+
+  itxn_next
+
+  callsub set_algorand_close_out_params
+
+  itxn_submit
+
+  int 1
+  return
+//
+
+// close out Algorand
+close_out_algorand:
+
+  itxn_begin
+
+  callsub set_algorand_close_out_params
+
+  itxn_submit
+
+  int 1
+  return 
+//
+
+// Make sure AssetCloseTo and CloseRemainderTo are not set
+check_close_to:
+
+  txn AssetCloseTo
+  global ZeroAddress
+  ==
+  &&
+
+  txn CloseRemainderTo 
+  global ZeroAddress
+  ==
+  &&
+
+  retsub
+//
+
+// Make sure RekeyTo is not set
+check_rekey_to:
+
+  txn RekeyTo
+  global ZeroAddress
+  ==
+  &&
+
+  retsub
+//
+
+// Ensure the reward is divisible by 1000 to allow for a 0.1% granularity in the payout share settings.
+divisible_by_1000:
+  int 1000
+  %
+  int 0
+  ==
+  retsub
+//
+
+// Check if a given address is currently opted into the currency index
+opted_into_currency:
+  byte "currency_index"
+  app_global_get
+  asset_holding_get AssetBalance
+  swap
+  pop
+  retsub
+//
+
+// Check if a given address is currently opted into the nft index
+opted_into_nft:
+  byte "nft_index"
+  app_global_get
+  asset_holding_get AssetBalance
+  swap
+  pop
+  retsub
+//
+
+// Get the current ASA balance of a address
+asa_balance:
+  asset_holding_get AssetBalance
+  pop
+  retsub
+//
+
+//
+set_nft_close_out_params:
+
+  int axfer
+  itxn_field TypeEnum
+
+  int 0
+  itxn_field Fee
+
+  byte "nft_index"
+  app_global_get 
+  itxn_field XferAsset
+
+  global CreatorAddress
+  itxn_field AssetReceiver
+
+  global CreatorAddress
+  itxn_field AssetCloseTo
+
+  retsub
+//
+
+//
+set_currency_close_out_params:
+
+  int axfer
+  itxn_field TypeEnum
+
+  int 0
+  itxn_field Fee
+
+  byte "currency_index"
+  app_global_get 
+  itxn_field XferAsset
+
+  global CreatorAddress
+  itxn_field AssetReceiver
+
+  global CreatorAddress
+  itxn_field AssetCloseTo
+
+  retsub
+//
+
+//
+set_algorand_close_out_params:
+
+  int pay
+  itxn_field TypeEnum
+
+  int 0
+  itxn_field Fee
+
+  global CreatorAddress
+  itxn_field Receiver
+
+  int 0
+  itxn_field Amount
+
+  global CreatorAddress
+  itxn_field CloseRemainderTo 
+
+  retsub
+//
+
+// Get group transaction before the app call
+get_leading_txn_index:
+  txn GroupIndex
+  int 1
+  -
+  retsub
+//
+
+//
+set_manager_payout:
+
+  byte "manager_share"
+  app_global_get
+  int 0
+  >
+
+  switch retsub_return set_manager_payout_params 
+
+  retsub
+//
+
+//
+set_manager_payout_params:
+
+  int axfer
+  itxn_field TypeEnum
+
+  int 0
+  itxn_field Fee
+
+  byte "currency_index"
+  app_global_get 
+  itxn_field XferAsset
+
+  byte "manager_payout_address"
+  app_global_get 
+  itxn_field AssetReceiver
+
+  callsub get_leading_txn_index
+  gtxns AssetAmount
+  int 1000
+  /
+  byte "manager_share"
+  app_global_get
+  *
+  itxn_field AssetAmount
+
+  itxn_next
+
+  retsub
+//
+
+//
+set_royalty_payout:
+
+  byte "royalty_share"
+  app_global_get
+  int 0
+  >
+
+  switch retsub_return set_royalty_payout_params 
+
+  retsub
+//
+
+//
+set_royalty_payout_params:
+
+  int axfer
+  itxn_field TypeEnum
+
+  int 0
+  itxn_field Fee
+
+  byte "currency_index"
+  app_global_get 
+  itxn_field XferAsset
+
+  // if the royalty payout address is not opted into the listing currency the funds will be deposited in the revenue sink
+  byte "royalty_revenue_sink"
+  app_global_get
+  byte "royalty_payout_address"
+  app_global_get
+  byte "royalty_payout_address"
+  app_global_get
+  callsub opted_into_currency
+  select
+  itxn_field AssetReceiver
+
+  callsub get_leading_txn_index
+  gtxns AssetAmount
+  int 1000
+  /
+  byte "royalty_share"
+  app_global_get
+  *
+  itxn_field AssetAmount
+
+  itxn_next
+
+  retsub
+//
+
+//
+set_seller_payout:
+
+  byte "seller_share"
+  app_global_get
+  int 0
+  >
+
+  switch retsub_return set_seller_payout_params 
+
+  retsub
+//
+
+//
+set_seller_payout_params:
+
+  int axfer
+  itxn_field TypeEnum
+
+  int 0
+  itxn_field Fee
+
+  byte "currency_index"
+  app_global_get 
+  itxn_field XferAsset
+
+  // if the seller payout address is not opted into the listing currency the funds will be deposited in the revenue sink
+  byte "seller_revenue_sink"
+  app_global_get
+  byte "seller_payout_address"
+  app_global_get
+  byte "seller_payout_address"
+  app_global_get
+  callsub opted_into_currency
+  select
+  itxn_field AssetReceiver
+
+  callsub get_leading_txn_index
+  gtxns AssetAmount
+  int 1000
+  /
+  byte "seller_share"
+  app_global_get
+  *
+  itxn_field AssetAmount
+
+  itxn_next
+
+  retsub
+//
+
+
+// sub routine that is just a return, usefull when we want to switch between an execution or a return
+retsub_return:
+  retsub
+//

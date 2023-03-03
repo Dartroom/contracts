@@ -1,18 +1,11 @@
-import algosdk, { Indexer, Algodv2, BaseHTTPClient, Transaction } from "algosdk"
+import { Indexer, Algodv2, BaseHTTPClient, Transaction } from "algosdk"
 import { AlgodTokenHeader, CustomTokenHeader, IndexerTokenHeader } from "algosdk/src/client/urlTokenBaseHTTPClient"
-
-import deployAuction, { DeployAuctionParams } from "./interface/deployAuction"
-import setupAuction, { SetupAuctionParams } from "./interface/setupAuction"
-import placeAuctionBid, { BidParams } from "./interface/placeAuctionBid"
-import claimAuctionNFT, { ClaimNFTParams } from "./interface/claimAuctionNFT"
-import claimAuctionShares, { ClaimAuctionSharesParams } from "./interface/claimAuctionShares"
-import destoryAuction, { DestoryAuctionParams } from "./interface/destoryAuction"
-import getAuctionGlobalState, { GetAuctionParams } from "./interface/getAuctionGlobalState"
-import getAuctionInfo from "./interface/getAuctionInfo"
+import { FixedBid } from './interface/fixedBid.ts/index'
 
 export interface Provider {
   indexer: Indexer
   algod: Algodv2
+  MIN_BALANCE_FEE: number
 }
 
 export type TxnArray = Array<Transaction>
@@ -21,6 +14,12 @@ export class Contracts {
 
   indexer: Indexer
   algod: Algodv2
+  MIN_BALANCE_FEE: number
+
+  /**
+   * List one or multiple tokens of an ASA for a fixed price.
+   */
+  fixedBid: FixedBid
 
   constructor(provider: { 
     indexer: { 
@@ -32,8 +31,10 @@ export class Contracts {
       baseServer: string,
       portNet: string
       token: string | AlgodTokenHeader | CustomTokenHeader |  BaseHTTPClient
-    }
+    },
+    minBalanceFee?: number
   }) {
+    this.MIN_BALANCE_FEE = provider.minBalanceFee || 100000
     this.indexer = new Indexer(
       provider.indexer.token, 
       provider.indexer.baseServer,
@@ -44,6 +45,7 @@ export class Contracts {
       provider.algod.baseServer,
       provider.algod.portNet
     )
+    this.fixedBid = new FixedBid(this)
   }
   
   /**
@@ -64,9 +66,9 @@ export class Contracts {
    * @param {number} params.extensionTime - Minimum time in blocks left after a bid is placed. If the time is lower than this minimum and a bid is placed then the time gets increased to the minimum. (AKA anti-snipe)
    * @return Promise<algosdk.Transaction[]> 
    */
-  deployAuction (params: DeployAuctionParams) {
-    return deployAuction(this, params)
-  }
+  // deployAuction (params: DeployAuctionParams) {
+  //   return deployAuction(this, params)
+  // }
 
   /**
    * Generates transactions to complete the auction setup. The function checks the global state of the auction and balances of the contract address to ensure the auction is still unset.
@@ -78,9 +80,9 @@ export class Contracts {
    * @param {number} params.appId - Application index of the auction contract.
    * @return Promise<algosdk.Transaction[]>
    */
-  setupAuction (params: SetupAuctionParams) {
-    return setupAuction(this, params)
-  }
+  // setupAuction (params: SetupAuctionParams) {
+  //   return setupAuction(this, params)
+  // }
 
   /**
    * Generates transactions to bid on an existing auction contract. The function will check whether the bid is primary or secondary and modify the transactions accordingly.
@@ -93,9 +95,9 @@ export class Contracts {
    * @param {string} params.bidderAddress - The Algorand address placing the bid.
    * @return Promise<algosdk.Transaction[]>
    */
-  placeAuctionBid (params: BidParams) {
-    return placeAuctionBid(this, params)
-  }
+  // placeAuctionBid (params: BidParams) {
+  //   return placeAuctionBid(this, params)
+  // }
 
   /**
    * Generates transactions to claim the NFT out of the auction contract. If the auction winner has not yet opted into the NFT, the function will return an opt-in transaction in addition to the claim transaction.
@@ -107,9 +109,9 @@ export class Contracts {
    * @param {string} params.senderAddress - Address of the account sending the transaction (does not have to be the same address as the auction winner)
    * @returns Promise<algosdk.Transaction[]>
    */
-  claimAuctionNFT (params: ClaimNFTParams) {
-    return claimAuctionNFT(this, params)
-  }
+  // claimAuctionNFT (params: ClaimNFTParams) {
+  //   return claimAuctionNFT(this, params)
+  // }
 
   /**
    * Generates transactions to distribute the funds earned by auction to the shareholders. In the case of Algo auctions, all shares will be paid out at once. For ASA currency auctions, only the shares of shareholders who already opted into the auction currency will be paid out.
@@ -120,9 +122,9 @@ export class Contracts {
    * @param {string} params.senderAddress - Address of the account sending the transaction
    * @returns 
    */
-  claimAuctionShares (params: ClaimAuctionSharesParams) {
-    return claimAuctionShares(this, params)
-  }
+  // claimAuctionShares (params: ClaimAuctionSharesParams) {
+  //   return claimAuctionShares(this, params)
+  // }
 
   /**
    * Generates transactions to destroy an existing auction contract. Destroying the contract will close out (return) all the contract assets back to the auction creator.
@@ -132,9 +134,9 @@ export class Contracts {
    * @param {number} params.appId - Application index of the auction contract.
    * @return Promise<algosdk.Transaction[]>
    */
-  destoryAuction (params: DestoryAuctionParams) {
-    return destoryAuction(this, params)
-  }
+  // destoryAuction (params: DestoryAuctionParams) {
+  //   return destoryAuction(this, params)
+  // }
   
   /**
    * Fetches and parses the Global State of the auction contract and returns the info in an object.
@@ -142,9 +144,9 @@ export class Contracts {
    * @param {number} params.appId - Application index of the auction contract. 
    * @returns Promise<GlobalState> 
    */
-  getAuctionGlobalState (params: GetAuctionParams) {
-    return getAuctionGlobalState(this, params)
-  }
+  // getAuctionGlobalState (params: GetAuctionParams) {
+  //   return getAuctionGlobalState(this, params)
+  // }
 
   /**
    * Return information about the current state of the contract, including the full Global State and bid history.
@@ -152,8 +154,8 @@ export class Contracts {
    * @param {number} params.appId - Application index of the auction contract. 
    * @returns
    */
-  getAuctionInfo (params: GetAuctionParams) {
-    return getAuctionInfo(this, params)
-  }
+  // getAuctionInfo (params: GetAuctionParams) {
+  //   return getAuctionInfo(this, params)
+  // }
 }
 

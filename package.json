@@ -9,6 +9,7 @@
     "dist/"
   ],
   "scripts": {
+    "codegen": "node codegen.js",
     "build": "tsup index.ts --format cjs,esm --dts",
     "lint": "tsc",
     "test": "jest"
@@ -24,7 +25,9 @@
   },
   "homepage": "https://github.com/Dartroom/dartroom-contracts#readme",
   "devDependencies": {
+    "@types/glob": "^8.1.0",
     "@types/jest": "^28.1.6",
+    "glob": "^8.1.0",
     "jest": "^28.1.3",
     "ts-jest": "^28.0.8",
     "ts-node": "^10.9.1",
