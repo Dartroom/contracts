@@ -1,6 +1,6 @@
-import { Provider } from "../contracts"
+import { Provider } from "../../contracts"
 import { getApplicationAddress } from "algosdk"
-import { getGlobalUint, getGlobalByte, getGlobalAddress  } from '../functions/globalState'
+import { getGlobalUint, getGlobalByte, getGlobalAddress  } from '../../functions/globalState'
 
 export interface GetAuctionParams {
   appId: number

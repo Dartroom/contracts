@@ -1,16 +1,16 @@
 import algosdk from "algosdk"
-import { Provider, TxnArray } from "../contracts"
-import { addressAssetBalance } from "../functions/balance"
+import { Provider, TxnArray } from "../../contracts"
+import { addressAssetBalance } from "../../functions/balance"
 import getAuctionGlobalState from "./getAuctionGlobalState"
-import { hashAbiMethod } from "../functions/abi"
+import { hashAbiMethod } from "../../functions/abi"
 
 export interface SetupAuctionParams {
   appId: number
 }
 
-export default async function setupAuction({ algod, indexer }: Provider, { appId }: SetupAuctionParams): Promise<TxnArray>  {
+export default async function setupAuction({ algod, indexer, MIN_BALANCE_FEE }: Provider, { appId }: SetupAuctionParams): Promise<TxnArray>  {
   
-  const state = await getAuctionGlobalState({ algod, indexer },{ appId })
+  const state = await getAuctionGlobalState({ algod, indexer, MIN_BALANCE_FEE },{ appId })
   const appNftBalance = await addressAssetBalance(indexer, state.contractAddress, state.nftIndex)
 
   if (appNftBalance !== -1 || state.endRound > 0) {

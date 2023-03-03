@@ -1,7 +1,7 @@
 import algosdk from "algosdk"
-import { Provider, TxnArray } from "../contracts"
-import { hashAbiMethod } from "../functions/abi"
-import { addressAssetBalance } from "../functions/balance"
+import { Provider, TxnArray } from "../../contracts"
+import { hashAbiMethod } from "../../functions/abi"
+import { addressAssetBalance } from "../../functions/balance"
 import getAuctionGlobalState from "./getAuctionGlobalState"
 
 export interface ClaimAuctionSharesParams {
@@ -9,12 +9,12 @@ export interface ClaimAuctionSharesParams {
   senderAddress: string
 }
 
-export default async function claimAuctionShares({ algod, indexer }: Provider, { 
+export default async function claimAuctionShares({ algod, indexer, MIN_BALANCE_FEE }: Provider, { 
   appId, 
   senderAddress
 }: ClaimAuctionSharesParams): Promise<TxnArray>  {
   
-  const state = await getAuctionGlobalState({ algod, indexer },{ appId })
+  const state = await getAuctionGlobalState({ algod, indexer, MIN_BALANCE_FEE },{ appId })
 
   if (state.endRound === 0) {
     throw new Error('The acution has not yet started.')

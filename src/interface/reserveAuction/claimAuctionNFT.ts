@@ -1,7 +1,7 @@
 import algosdk from "algosdk"
-import { Provider, TxnArray } from "../contracts"
-import { hashAbiMethod } from "../functions/abi"
-import { addressAssetBalance } from "../functions/balance"
+import { Provider, TxnArray } from "../../contracts"
+import { hashAbiMethod } from "../../functions/abi"
+import { addressAssetBalance } from "../../functions/balance"
 import getAuctionGlobalState from "./getAuctionGlobalState"
 
 export interface ClaimNFTParams {
@@ -9,12 +9,12 @@ export interface ClaimNFTParams {
   senderAddress: string
 }
 
-export default async function claimAuctionNFT({ algod, indexer }: Provider, { 
+export default async function claimAuctionNFT({ algod, indexer, MIN_BALANCE_FEE }: Provider, { 
   appId, 
   senderAddress
 }: ClaimNFTParams): Promise<TxnArray> {
   
-  const state = await getAuctionGlobalState({ algod, indexer },{ appId })
+  const state = await getAuctionGlobalState({ algod, indexer, MIN_BALANCE_FEE },{ appId })
   const appNftBalance = await addressAssetBalance(indexer, state.contractAddress, state.nftIndex)
   const buyerNftBalance = await addressAssetBalance(indexer, state.highestBidder, state.nftIndex)
   let optInTxn

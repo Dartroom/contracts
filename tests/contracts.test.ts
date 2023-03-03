@@ -23,9 +23,6 @@ const nftIndex = 67032510
 const appId = 109099200
 
 
-c.fixedBid.deploy()
-c.fixedBid.destroy()
-
 // healt()
 
 async function healt () {

@@ -1,7 +1,7 @@
 import algosdk from "algosdk"
-import { Provider, TxnArray } from "../contracts"
-import { hashAbiMethod } from "../functions/abi"
-import { addressAssetBalance } from "../functions/balance"
+import { Provider, TxnArray } from "../../contracts"
+import { hashAbiMethod } from "../../functions/abi"
+import { addressAssetBalance } from "../../functions/balance"
 import getAuctionGlobalState from "./getAuctionGlobalState"
 
 export interface BidParams {
@@ -10,13 +10,13 @@ export interface BidParams {
   bidderAddress: string
 }
 
-export default async function placeAuctionBid({ algod, indexer }: Provider, { 
+export default async function placeAuctionBid({ algod, indexer, MIN_BALANCE_FEE }: Provider, { 
   appId, 
   amount, 
   bidderAddress 
 }: BidParams): Promise<TxnArray>  {
   
-  const state = await getAuctionGlobalState({ algod, indexer },{ appId })
+  const state = await getAuctionGlobalState({ algod, indexer, MIN_BALANCE_FEE },{ appId })
 
   if (state.endRound === 0 && state.timeLeft === 0) {
     const appNftBalance = await addressAssetBalance(indexer, state.contractAddress, state.nftIndex)

@@ -1,4 +1,4 @@
-import { Provider } from "../contracts"
+import { Provider } from "../../contracts"
 import getAuctionGlobalState from "./getAuctionGlobalState"
 
 export interface GetAuctionParams {
@@ -27,9 +27,9 @@ interface TransactionsInfo {
   "transactions": Array<Transaction>
 }
 
-export default async function getAuctionInfo({ indexer, algod }: Provider, params: GetAuctionParams) {
+export default async function getAuctionInfo({ indexer, algod, MIN_BALANCE_FEE }: Provider, params: GetAuctionParams) {
 
-  const appState = await getAuctionGlobalState({ indexer, algod }, params)
+  const appState = await getAuctionGlobalState({ indexer, algod, MIN_BALANCE_FEE }, params)
 
   const bids = []
 
@@ -52,11 +52,11 @@ export default async function getAuctionInfo({ indexer, algod }: Provider, param
             txns[i]['payment-transaction'].receiver === appState.contractAddress &&
             txns[i].sender !== appState.creatorAddress
           ) {
-            bids.push({
-              amount: txns[i]["payment-transaction"].amount,
-              bidderAddress: txns[i].sender,
-              round: txns[i]["confirmed-round"]
-            })
+            // bids.push({
+            //   amount: txns[i]["payment-transaction"].amount,
+            //   bidderAddress: txns[i].sender,
+            //   round: txns[i]["confirmed-round"]
+            // })
           }
         }
 
@@ -68,11 +68,11 @@ export default async function getAuctionInfo({ indexer, algod }: Provider, param
             txns[i]['asset-transfer-transaction']['asset-id'] === appState.currencyIndex && 
             txns[i]['asset-transfer-transaction'].receiver === appState.contractAddress
           ) {
-            bids.push({
-              amount: txns[i]["asset-transfer-transaction"].amount,
-              bidderAddress: txns[i].sender,
-              round: txns[i]["confirmed-round"]
-            })
+            // bids.push({
+            //   amount: txns[i]["asset-transfer-transaction"].amount,
+            //   bidderAddress: txns[i].sender,
+            //   round: txns[i]["confirmed-round"]
+            // })
           }
         }
       }
