@@ -1,0 +1,504 @@
+#pragma version 8
+
+// on creation (id is still 0) set the intial values
+txn ApplicationID
+int 0
+==
+
+bnz create_app
+
+txn OnCompletion
+int NoOp
+==
+
+callsub check_rekey_to
+callsub check_close_to
+
+bnz handle_noop
+
+txn OnCompletion
+int OptIn
+==
+
+callsub check_rekey_to
+callsub check_close_to
+
+bnz handle_optin
+
+txn OnCompletion
+int CloseOut
+==
+
+callsub check_rekey_to
+callsub check_close_to
+
+bnz handle_closeout
+
+txn OnCompletion
+int UpdateApplication
+==
+
+callsub check_rekey_to
+callsub check_close_to
+
+bnz handle_updateapp
+
+txn OnCompletion
+int DeleteApplication
+==
+
+callsub check_rekey_to
+callsub check_close_to
+
+bnz handle_deleteapp
+
+// Unexpected OnCompletion value. Should be unreachable.
+err
+
+//
+create_app:
+
+  txn NumAccounts
+  int 2
+  ==
+
+  bnz set_app_global_state
+
+  err
+//
+
+//
+set_app_global_state:
+
+  // Recipient address of the revenue
+  byte "recipient_address"
+  txn Accounts 1
+  app_global_put
+
+  // Manager address of the contract, only this address can destory the contract and execture opt in and opt out functions.
+  byte "manager_address"
+  txn Accounts 2
+  app_global_put
+
+  int 1
+  return
+//
+
+//  branch contract functions based on ABI function hash
+handle_noop:
+
+  method "optin()void"
+  method "optout()void"
+  method "claim()void"
+  txna ApplicationArgs 0
+  match opt_in opt_out claim_revenue
+
+  err
+//
+
+//
+opt_in:
+
+  byte "manager_address"
+  app_global_get
+  txn Sender
+  ==
+
+  txn NumAssets
+  int 8
+  <=
+  &&
+
+  int 1
+  txn NumAssets
+  <=
+  &&
+
+  txn Fee
+  global MinTxnFee
+  int 9
+  *
+  <=
+  &&
+
+  bnz set_opt_in
+
+  err
+//
+
+//
+set_opt_in:
+
+  itxn_begin
+
+  callsub exc_opt_int
+
+  itxn_submit
+
+  int 1
+  return
+//
+
+//
+exc_opt_int:
+
+  int 0
+  store 0
+
+  opt_in_loop:
+
+  int axfer
+  itxn_field TypeEnum
+
+  int 0
+  itxn_field Fee
+
+  load 0
+  txnas Assets
+  itxn_field XferAsset
+
+  int 0
+  itxn_field AssetAmount
+
+  global CurrentApplicationAddress
+  itxn_field AssetReceiver
+
+  callsub increment_0
+
+  load 0
+  txn NumAssets
+  <
+  bnz check_itxn_position
+
+  retsub
+//
+
+
+//
+check_itxn_position:
+
+  load 0
+  int 0
+  !=
+  bnz set_next_itxn
+
+  b opt_in_loop
+//
+
+//
+set_next_itxn:
+  itxn_next
+  b opt_in_loop
+//
+
+//
+increment_0:
+
+  load 0
+  int 1
+  +
+  store 0
+
+  retsub
+//
+
+//
+opt_out:
+
+  byte "manager_address"
+  app_global_get
+  txn Sender
+  ==
+
+  txn NumAssets
+  int 8
+  <=
+  &&
+
+  int 1
+  txn NumAssets
+  <=
+  &&
+
+  txn Fee
+  global MinTxnFee
+  int 10
+  *
+  <=
+  &&
+
+  bnz set_opt_out
+
+  err
+//
+
+//
+set_opt_out:
+
+  itxn_begin
+
+  callsub exc_opt_out
+
+  itxn_next
+
+  int pay
+  itxn_field TypeEnum
+
+  int 0
+  itxn_field Fee
+
+  byte "manager_address"
+  app_global_get
+  itxn_field Receiver
+
+  txn NumAssets
+  global MinBalance
+  *
+  itxn_field Amount
+
+  itxn_submit
+
+  int 1
+  return
+//
+
+exc_opt_out:
+
+  int 0
+  store 0
+
+  opt_out_loop:
+
+  int axfer
+  itxn_field TypeEnum
+
+  int 0
+  itxn_field Fee
+
+  load 0
+  txnas Assets
+  itxn_field XferAsset
+
+  byte "manager_address"
+  app_global_get
+  itxn_field AssetReceiver
+
+  byte "manager_address"
+  app_global_get
+  itxn_field AssetCloseTo
+
+  callsub increment_0
+
+  load 0
+  txn NumAssets
+  <
+  bnz check_optout_itxn_position
+
+  retsub
+//
+
+//
+check_optout_itxn_position:
+
+  load 0
+  int 0
+  !=
+  bnz set_optout_next_itxn
+
+  b opt_out_loop
+//
+
+//
+set_optout_next_itxn:
+  itxn_next
+  b opt_out_loop
+//
+
+claim_revenue:
+
+  byte "recipient_address"
+  app_global_get
+  txn Sender
+  ==
+
+  txn NumAssets
+  int 8
+  <=
+  &&
+
+  int 1
+  txn NumAssets
+  <=
+  &&
+
+  txn Fee
+  global MinTxnFee
+  int 9
+  *
+  <=
+  &&
+
+  bnz set_claim
+
+  err
+//
+
+//
+set_claim:
+
+  itxn_begin
+
+  int 0
+  store 0
+
+  claim_loop:
+
+  int axfer
+  itxn_field TypeEnum
+
+  int 0
+  itxn_field Fee
+
+  load 0
+  txnas Assets
+  itxn_field XferAsset
+
+  global CurrentApplicationAddress
+  load 0
+  txnas Assets
+  callsub asa_balance
+  itxn_field AssetAmount
+
+  byte "recipient_address"
+  app_global_get
+  itxn_field AssetReceiver
+
+  callsub increment_0
+
+  load 0
+  txn NumAssets
+  <
+  bnz check_claim_itxn_position
+
+  itxn_submit
+
+  int 1
+  return
+//
+
+//
+check_claim_itxn_position:
+
+  load 0
+  int 0
+  !=
+  bnz set_claim_next_itxn
+
+  b claim_loop
+//
+
+//
+set_claim_next_itxn:
+  itxn_next
+  b claim_loop
+//
+
+// allow contract to use callers local storage (Not used in this contract)
+handle_optin:
+  int 0
+  return 
+//
+
+// allow opt out of the contracts usages of the callers local storage (Not used in this contract)
+handle_closeout:
+  int 0
+  return 
+//
+
+// allow for contract updates (Not used in this contract)
+handle_updateapp:
+  int 0
+  return 
+//
+
+// set requirments for the contracts deletion
+handle_deleteapp:
+
+  byte "manager_address"
+  app_global_get
+  txn Sender
+  ==
+
+  txn Fee
+  global MinTxnFee
+  int 2
+  *
+  <=
+  &&
+
+  bnz close_out_txn
+
+  return
+//
+
+// close out conctract
+close_out_txn:
+
+  itxn_begin
+
+  int pay
+  itxn_field TypeEnum
+
+  int 0
+  itxn_field Fee
+
+  byte "manager_address"
+  app_global_get
+  itxn_field Receiver
+
+  int 0
+  itxn_field Amount
+
+   byte "manager_address"
+  app_global_get
+  itxn_field CloseRemainderTo
+
+  itxn_submit
+
+  int 1
+  return
+//
+
+// Make sure AssetCloseTo and CloseRemainderTo are not set
+check_close_to:
+
+  txn AssetCloseTo
+  global ZeroAddress
+  ==
+  &&
+
+  txn CloseRemainderTo 
+  global ZeroAddress
+  ==
+  &&
+
+  retsub
+//
+
+// Make sure RekeyTo is not set
+check_rekey_to:
+
+  txn RekeyTo
+  global ZeroAddress
+  ==
+  &&
+
+  retsub
+//
+
+// Get the current ASA balance of a address
+asa_balance:
+  asset_holding_get AssetBalance
+  pop
+  retsub
+//

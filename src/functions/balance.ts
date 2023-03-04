@@ -11,4 +11,5 @@ async function addressAssetBalance (indexerClient: Indexer, address: string, ass
   }
 }
 
+
 export { addressAssetBalance }
