@@ -1,6 +1,7 @@
 import { Indexer, Algodv2, BaseHTTPClient, Transaction } from "algosdk"
 import { AlgodTokenHeader, CustomTokenHeader, IndexerTokenHeader } from "algosdk/src/client/urlTokenBaseHTTPClient"
-import { FixedBid } from './interface/fixedBid.ts/index'
+import { FixedBid } from './interface/fixedBid/index'
+import { RevenueSink } from './interface/acRevenueSink/index'
 
 export interface Provider {
   indexer: Indexer
@@ -20,6 +21,7 @@ export class Contracts {
    * List one or multiple tokens of an ASA for a fixed price.
    */
   fixedBid: FixedBid
+  acRevenueSink: RevenueSink
 
   constructor(provider: { 
     indexer: { 
@@ -46,6 +48,7 @@ export class Contracts {
       provider.algod.portNet
     )
     this.fixedBid = new FixedBid(this)
+    this.acRevenueSink = new RevenueSink(this)
   }
   
   /**
