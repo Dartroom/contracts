@@ -26,6 +26,9 @@ export async function optin(provider: Provider, {
     throw new Error('Contract account information can not be found.')
   }
 
+  let currentBatch: Array<number> = []
+  const batchedAsas: Array<Array<number>> = []
+
   for (let i = 0; i < asaArray.length; i++) {
     const index = asaArray[i]
     const match = contractAccount.assets.find((asset: any) => asset['asset-id'] === index)
@@ -33,7 +36,20 @@ export async function optin(provider: Provider, {
     if (match) {
       throw new Error(`Contract is already opted into ${index}.`)
     }
+
+    if (!index) {
+      return
+    }
+
+    if (currentBatch.length < 8) {
+      currentBatch.push(index)
+    } else {
+      batchedAsas.push([...currentBatch])
+      currentBatch = [index]
+    }
   }
+
+  batchedAsas.push([...currentBatch])
 
   const currentMinBalance = contractAccount['min-balance']
   const currentBalance = contractAccount.amount
@@ -57,20 +73,28 @@ export async function optin(provider: Provider, {
     )
   )
 
-  txns.push(
-    makeApplicationNoOpTxn(
-      state.managerAddress, 
-      {
-        ...params,
-        fee: ALGORAND_MIN_TX_FEE * (asaArray.length + 1)
-      }, 
-      appId, 
-      [hashAbiMethod("optin()void")], 
-      [], 
-      [], 
-      asaArray
+  for (let i = 0; i < batchedAsas.length; i++) {
+    const batch = batchedAsas[i]
+
+    if (!batch) {
+      return
+    }
+
+    txns.push(
+      makeApplicationNoOpTxn(
+        state.managerAddress,
+        {
+          ...params,
+          fee: ALGORAND_MIN_TX_FEE * (batch.length + 1)
+        }, 
+        appId,
+        [hashAbiMethod("optin()void")], 
+        [], 
+        [], 
+        batch
+      )
     )
-  )
+  }
 
   const txGroup = assignGroupID(txns)
 

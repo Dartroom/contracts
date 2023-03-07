@@ -24,7 +24,7 @@ const buyerAccount = algosdk.mnemonicToSecretKey('')
 // JRDF6G5JJCZFZADHNFUXQBMEJ5CRYMXD3XRF4BTJRWMEPJSLGZYYSDU3RM
 const managerAccount = algosdk.mnemonicToSecretKey('')
 
-const appId = 161964899
+const appId = 162286528
 
 jest.setTimeout(10000)
 
@@ -57,6 +57,18 @@ test('destroy', async () => {
   console.log(round)
   expect(typeof round).toBe('number')
 })
+
+// test('getState', async () => {
+//   const round = await getState()
+//   console.log(round)
+//   expect(typeof round).toBe('number')
+// })
+
+// test('find', async () => {
+//   const round = await find()
+//   console.log(round)
+//   expect(typeof round).toBe('number')
+// })
 
 async function deploy() {
   
@@ -96,12 +108,30 @@ async function deploy() {
 }
 
 async function optin() {
+  // const txns = await c.acRevenueSink.optin({
+  //   appId: appId,
+  //   asaArray: [
+  //     84963414,
+  //     84963730,
+  //     161534719
+  //   ]
+  // })
+
   const txns = await c.acRevenueSink.optin({
     appId: appId,
     asaArray: [
       84963414,
       84963730,
-      161534719
+      161534719,
+      74346769,
+      67032510,
+      90623523,
+      74359767,
+      70906715,
+      66926059,
+      53190685,
+      51710886,
+      53191463
     ]
   })
 
@@ -136,12 +166,30 @@ async function optin() {
 }
 
 async function optout() {
+  // const txns = await c.acRevenueSink.optout({
+  //   appId: appId,
+  //   asaArray: [
+  //     84963414,
+  //     84963730,
+  //     161534719
+  //   ]
+  // })
+
   const txns = await c.acRevenueSink.optout({
-    appId: appId,
+    appId: appId, 
     asaArray: [
       84963414,
       84963730,
-      161534719
+      161534719,
+      74346769,
+      67032510,
+      90623523,
+      74359767,
+      70906715,
+      66926059,
+      53190685,
+      51710886,
+      53191463
     ]
   })
 
@@ -176,12 +224,30 @@ async function optout() {
 }
 
 async function claim() {
+  // const txns = await c.acRevenueSink.claim({
+  //   appId: appId,
+  //   asaArray: [
+  //     84963414,
+  //     84963730,
+  //     161534719
+  //   ]
+  // })
+
   const txns = await c.acRevenueSink.claim({
     appId: appId,
     asaArray: [
       84963414,
       84963730,
-      161534719
+      161534719,
+      74346769,
+      67032510,
+      90623523,
+      74359767,
+      70906715,
+      66926059,
+      53190685,
+      51710886,
+      53191463
     ]
   })
 
@@ -248,4 +314,24 @@ async function destory() {
   const txnInfo = await algosdk.waitForConfirmation(c.algod, response.txId, 5)
 
   return txnInfo['confirmed-round']
+}
+
+async function getState () {
+
+  const state = await c.acRevenueSink.getGlobalState({ appId: appId })
+
+  console.log(state)
+
+  return 1
+}
+
+async function find () {
+
+  const state = await c.acRevenueSink.find({ 
+    asset: 84963414,
+    recipientAddress: artistAccount.addr,
+    managerAddress: managerAccount.addr
+  })
+
+  return 1
 }
