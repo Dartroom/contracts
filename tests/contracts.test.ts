@@ -9,7 +9,7 @@ const c = new Contracts({
     baseServer: "https://algoindexer.testnet.algoexplorerapi.io",
   },
   algod: {
-    token: {'X-API-key' : '5eheA7RdhM2XHLxdY2xPmae6uobgvI4UaHMMjT3K'},
+    token: {'X-API-key' : ''},
     portNet: "",
     baseServer: "https://testnet-algorand.api.purestake.io/ps2",
   }
@@ -18,9 +18,9 @@ const c = new Contracts({
 const sellerAccount = algosdk.mnemonicToSecretKey('')
 const artistAccount = algosdk.mnemonicToSecretKey('')
 const buyerAccount = algosdk.mnemonicToSecretKey('')
-const managerAddress = "IC6Q7LOQWCUYD3PQS2E43BEOIDVPTDBZHZ6T5VGEBLBCRQVOMYKSZBUU6I"
-const nftIndex = 67032510
-const appId = 109099200
+const managerAddress = ""
+const nftIndex = 0
+const appId = 0
 
 
 // healt()

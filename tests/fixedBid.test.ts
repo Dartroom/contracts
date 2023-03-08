@@ -9,22 +9,18 @@ const c = new Contracts({
     baseServer: "https://algoindexer.testnet.algoexplorerapi.io",
   },
   algod: {
-    token: {'X-API-key' : '5eheA7RdhM2XHLxdY2xPmae6uobgvI4UaHMMjT3K'},
+    token: {'X-API-key' : ''},
     portNet: "",
     baseServer: "https://testnet-algorand.api.purestake.io/ps2",
   }
 })
 
-// B6OKNN6EWVZM3BRYNEWTA4OIE7RA537SZ5GOKRCKHIPEHUZNDXD6ZLDC4E
 const sellerAccount = algosdk.mnemonicToSecretKey('')
-// JAA73KQKZFZYASNRMEL4K44WEPWZSCDSHUARBKUKFQJ3VW6SV7N3GV7PAM
 const artistAccount = algosdk.mnemonicToSecretKey('')
-// JXYJM4HI3V3TTOOIDJBU4ORYHMMT4B5Z2JMUMN7FP5CY2JM65GQUCQKNZU
 const buyerAccount = algosdk.mnemonicToSecretKey('')
-// JRDF6G5JJCZFZADHNFUXQBMEJ5CRYMXD3XRF4BTJRWMEPJSLGZYYSDU3RM
 const managerAccount = algosdk.mnemonicToSecretKey('')
 
-const appId = 161718631
+const appId = 162482533
 
 jest.setTimeout(10000)
 
@@ -64,11 +60,11 @@ jest.setTimeout(10000)
 //   expect(typeof round).toBe('number')
 // })
 
-test('destroy', async () => {
-  const round = await destory()
-  console.log(round)
-  expect(typeof round).toBe('number')
-})
+// test('destroy', async () => {
+//   const round = await destory()
+//   console.log(round)
+//   expect(typeof round).toBe('number')
+// })
 
 async function deploy() {
   
@@ -82,7 +78,7 @@ async function deploy() {
     managerShare: 30,
     price: 10000,
     nftIndex: 161534719,
-    currencyIndex: 84963414
+    currencyIndex: 0
   })
 
   if (!txns) {

@@ -55,7 +55,7 @@ bnz handle_deleteapp
 // Unexpected OnCompletion value. Should be unreachable.
 err
 
-// Create auction contract
+// Create listing contract
 create_app:
   txn NumAppArgs
   int 4

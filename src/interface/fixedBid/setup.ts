@@ -32,13 +32,13 @@ export async function setup(provider: Provider, {
     throw new Error('The listing is already set.')
   }
 
+  let params = await provider.algod.getTransactionParams().do()
+  params.fee = ALGORAND_MIN_TX_FEE
+  params.flatFee = true
+
   if (state.currencyIndex >= 0) {
 
     const txns = []
-
-    let params = await provider.algod.getTransactionParams().do()
-    params.fee = ALGORAND_MIN_TX_FEE
-    params.flatFee = true
 
     const accounts = [
       state.sellerPayoutAddress, // seller sink,
@@ -100,6 +100,59 @@ export async function setup(provider: Provider, {
 
   } else {
     // Algo Fixed Bid
-    return []
+
+    const txns = []
+
+    txns.push(
+        makePaymentTxnWithSuggestedParams(
+        state.creatorAddress, 
+        state.contractAddress, 
+        provider.MIN_BALANCE_FEE * 2, 
+        undefined, 
+        undefined, 
+        params
+      )
+    )
+
+    txns.push(
+      makeApplicationNoOpTxn(
+        state.creatorAddress, 
+        {
+          ...params,
+          fee: ALGORAND_MIN_TX_FEE * 2
+        }, 
+        appId, 
+        [hashAbiMethod("setup()void")], 
+        [], 
+        [], 
+        [
+          state.nftIndex
+        ]
+      )
+    )
+
+    if (nNFTs) {
+
+      if (nNFTs < 1 || !Number.isInteger(nNFTs)) {
+        throw new Error('nNFTs must be a positive integer.')
+      }
+
+      txns.push(
+        makeAssetTransferTxnWithSuggestedParams(
+          state.creatorAddress, 
+          state.contractAddress, 
+          undefined, 
+          undefined, 
+          nNFTs,
+          undefined, 
+          state.nftIndex, 
+          params
+        )
+      )
+    }
+    
+    const txGroup = assignGroupID(txns)
+
+    return txGroup
   }
 }

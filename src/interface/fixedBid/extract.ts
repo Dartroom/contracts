@@ -14,11 +14,6 @@ export interface ExtractFixedBidParams {
   nNFTs: number
 }
 
-/**
- * Extract a given number of NFT tokens from the contract.
- * 
- * @param settings
- */
 export async function extract(provider: Provider, {
   appId,
   nNFTs

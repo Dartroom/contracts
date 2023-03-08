@@ -10,11 +10,6 @@ export interface DestroyFixedBidParams {
   appId: number
 }
 
-/**
- * Deploy the fixed bid listings on the network.
- * 
- * @param settings
- */
 export async function destroy(provider: Provider, {
   appId
 }: DestroyFixedBidParams) {
@@ -29,17 +24,13 @@ export async function destroy(provider: Provider, {
     params.fee = ALGORAND_MIN_TX_FEE * (appNftBalance >= 0 ? 4 : 2 )
     params.flatFee = true
 
-    
-
     let txn = makeApplicationDeleteTxn(
       state.creatorAddress,
       params,
       appId,
       [],
       [],
-      [
-
-      ],
+      [],
       [
         state.nftIndex,
         state.currencyIndex
@@ -50,5 +41,23 @@ export async function destroy(provider: Provider, {
 
   } else {
     // Algo listing
+
+    let params = await provider.algod.getTransactionParams().do()
+    params.fee = ALGORAND_MIN_TX_FEE * (appNftBalance >= 0 ? 3 : 2 )
+    params.flatFee = true
+
+    let txn = makeApplicationDeleteTxn(
+      state.creatorAddress,
+      params,
+      appId,
+      [],
+      [],
+      [],
+      [
+        state.nftIndex
+      ]
+    )
+
+    return [txn]
   }
 }

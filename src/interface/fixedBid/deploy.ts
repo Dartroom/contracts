@@ -7,8 +7,11 @@ import {
   encodeUint64
 } from "algosdk"
 import { compileProgram, convertProgram } from "../../functions/program"
+
 import acApprovalProgram from '../../contracts/acFixedBid/approval'
 import acClearProgram from '../../contracts/acFixedBid/clearState'
+import algoApprovalProgram from '../../contracts/algoFixedBid/approval'
+import algoClearProgram from '../../contracts/algoFixedBid/clearState'
 
 export interface DeployFixedBidParams {
   sellerAddress: string
@@ -23,11 +26,6 @@ export interface DeployFixedBidParams {
   currencyIndex?: number
 }
 
-/**
- * Deploy the fixed bid listings on the network.
- * 
- * @param settings 
- */
 export async function deploy({ algod }: Provider, {
   sellerAddress,
   sellerPayoutAddress,
@@ -83,8 +81,8 @@ export async function deploy({ algod }: Provider, {
 
     // min balance base:      0,1   Algo
     // min balance storage:   0,421 Algo
-    // min balance deposit:   0,2   Algo
-    // total min balance:     0,721 Algo
+    // min balance deposit:   0,3   Algo
+    // total min balance:     0,821 Algo
 
     let params = await algod.getTransactionParams().do()
     params.fee = ALGORAND_MIN_TX_FEE
@@ -129,7 +127,56 @@ export async function deploy({ algod }: Provider, {
   } else {
     // Algo Fixed Bid
 
+    const approvalProgram = convertProgram(algoApprovalProgram)
+    const clearStateProgram = convertProgram(algoClearProgram)
+    const onComplete = OnApplicationComplete.NoOpOC
+    const localInts = 0
+    const localBytes = 0
+    const globalInts = 5 // 0,0285 Algo for every value
+    const globalBytes = 3 // 0,05 Algo for every value
 
-    return []
+    // min balance base:      0,1   Algo
+    // min balance storage:   0,2925 Algo
+    // min balance deposit:   0,2   Algo
+    // total min balance:     0,5925 Algo
+
+    let params = await algod.getTransactionParams().do()
+    params.fee = ALGORAND_MIN_TX_FEE
+    params.flatFee = true
+
+    const appArgs = [
+      encodeUint64(price),
+      encodeUint64(sellerShare),
+      encodeUint64(royaltyShare),
+      encodeUint64(managerShare)
+    ]
+
+    const accounts = [
+      sellerPayoutAddress,
+      royaltyPayoutAddress,
+      managerPayoutAddress
+    ]
+
+    const foreignAssets = [
+      nftIndex
+    ]
+
+    let txn = makeApplicationCreateTxn(
+      sellerAddress,
+      params,
+      onComplete,
+      approvalProgram,
+      clearStateProgram,
+      localInts,
+      localBytes,
+      globalInts,
+      globalBytes,
+      appArgs,
+      accounts,
+      undefined,
+      foreignAssets
+    )
+
+    return [txn]
   }
 }

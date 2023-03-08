@@ -13,11 +13,6 @@ export interface DepositFixedBidParams {
   nNFTs: number
 }
 
-/**
- * Desposit a given number of NFT tokens into the contract.
- * 
- * @param settings
- */
 export async function deposit(provider: Provider, {
   appId,
   nNFTs
