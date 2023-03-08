@@ -8,7 +8,7 @@ const algod = new algoSDK.Algodv2(
   "",
 )
 
-glob('**/acRevenueSink/*.teal', (err, files) => {
+glob('**/algoFixedBid/*.teal', (err, files) => {
 
   if (err) {
     console.log(err)

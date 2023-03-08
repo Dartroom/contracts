@@ -14,11 +14,6 @@ export interface UpdatePriceFixedBidParams {
   unitPrice: number
 }
 
-/**
- * Update the unit price.
- * 
- * @param settings
- */
 export async function updatePrice(provider: Provider, {
   appId,
   unitPrice
