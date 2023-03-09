@@ -1,9 +1,8 @@
 import { Provider } from "../../contracts"
 import { getGlobalState } from './getGlobalState'
 import { addressAssetBalance } from "../../functions/balance"
-import { hashAbiMethod } from "../../functions/abi"
+import { TxnFormatter } from "../../functions/txn"
 import {
-  Transaction,
   ALGORAND_MIN_TX_FEE,
   makeAssetTransferTxnWithSuggestedParams
 } from "algosdk"
@@ -38,14 +37,15 @@ export async function deposit(provider: Provider, {
     throw new Error(`You currently only hold ${appNftBalance} NFT token(s). Please lower the amount to deposit.`)
   }
 
-  const txns: Array<Transaction> = []
+  const txnFormater = new TxnFormatter(provider)
 
   let params = await provider.algod.getTransactionParams().do()
   params.fee = ALGORAND_MIN_TX_FEE
   params.flatFee = true
 
-  txns.push(
-    makeAssetTransferTxnWithSuggestedParams(
+  txnFormater.push({
+    description: "Deposit NFTs into the listing contract to offer them for sale.",
+    txn: makeAssetTransferTxnWithSuggestedParams(
       state.creatorAddress, 
       state.contractAddress, 
       undefined, 
@@ -54,8 +54,9 @@ export async function deposit(provider: Provider, {
       undefined, 
       state.nftIndex, 
       params
-    )
-  )
+    ),
+    signers: [state.creatorAddress]
+  })
 
-  return txns
+  return txnFormater.getTxns()
 }

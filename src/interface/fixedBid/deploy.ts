@@ -1,12 +1,13 @@
-import { Contracts, Provider } from "../../contracts"
+import { Provider } from "../../contracts"
+import { TxnFormatter } from "../../functions/txn"
 import { 
   ALGORAND_MIN_TX_FEE,
   isValidAddress, 
   OnApplicationComplete,
   makeApplicationCreateTxn,
-  encodeUint64
+  encodeUint64,
 } from "algosdk"
-import { compileProgram, convertProgram } from "../../functions/program"
+import { convertProgram } from "../../functions/program"
 
 import acApprovalProgram from '../../contracts/acFixedBid/approval'
 import acClearProgram from '../../contracts/acFixedBid/clearState'
@@ -26,7 +27,7 @@ export interface DeployFixedBidParams {
   currencyIndex?: number
 }
 
-export async function deploy({ algod }: Provider, {
+export async function deploy(provider: Provider, {
   sellerAddress,
   sellerPayoutAddress,
   royaltyPayoutAddress,
@@ -68,6 +69,8 @@ export async function deploy({ algod }: Provider, {
     throw new Error('The currency index must be a positive integer.')
   }
 
+  const txnFormater = new TxnFormatter(provider)
+
   if (currencyIndex && currencyIndex !== 0) {
     // AC Fixed Bid
 
@@ -84,7 +87,7 @@ export async function deploy({ algod }: Provider, {
     // min balance deposit:   0,3   Algo
     // total min balance:     0,821 Algo
 
-    let params = await algod.getTransactionParams().do()
+    let params = await provider.algod.getTransactionParams().do()
     params.fee = ALGORAND_MIN_TX_FEE
     params.flatFee = true
 
@@ -122,7 +125,13 @@ export async function deploy({ algod }: Provider, {
       foreignAssets
     )
 
-    return [txn]
+    txnFormater.push({
+      description: "Deploy the fixed bid listing contract to the network.",
+      txn: txn,
+      signers: [sellerAddress]
+    })
+
+    return txnFormater.getTxns()
 
   } else {
     // Algo Fixed Bid
@@ -140,7 +149,7 @@ export async function deploy({ algod }: Provider, {
     // min balance deposit:   0,2   Algo
     // total min balance:     0,5925 Algo
 
-    let params = await algod.getTransactionParams().do()
+    let params = await provider.algod.getTransactionParams().do()
     params.fee = ALGORAND_MIN_TX_FEE
     params.flatFee = true
 
@@ -177,6 +186,12 @@ export async function deploy({ algod }: Provider, {
       foreignAssets
     )
 
-    return [txn]
+    txnFormater.push({
+      description: "Deploy the fixed bid listing contract to the network.",
+      txn: txn,
+      signers: [sellerAddress]
+    })
+
+    return txnFormater.getTxns()
   }
 }

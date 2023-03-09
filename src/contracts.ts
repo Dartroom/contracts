@@ -2,25 +2,48 @@ import { Indexer, Algodv2, BaseHTTPClient, Transaction } from "algosdk"
 import { AlgodTokenHeader, CustomTokenHeader, IndexerTokenHeader } from "algosdk/src/client/urlTokenBaseHTTPClient"
 import { FixedBid } from './interface/fixedBid/index'
 import { RevenueSink } from './interface/acRevenueSink/index'
+import { verifyTxns } from './functions/verify'
 
 export interface Provider {
   indexer: Indexer
   algod: Algodv2
   MIN_BALANCE_FEE: number
+  extendedTransactionFormat: boolean
+  serverSecret: string | undefined
+  transactionBlobEncoding: 'Uint8Array' | 'Base64'
 }
 
 export type TxnArray = Array<Transaction>
 
-export class Contracts {
+export type Base64 = string
+
+export interface ExtendedTxn<B> {
+  description: string
+  blob: B extends 'Uint8Array' ? Uint8Array : Base64
+  txID: string
+  signers: Array<string>
+  signature?: string
+}
+
+export type ExtendedTxnArray<B> = Array<ExtendedTxn<B>>
+
+export type ExtendOrDefault<T, B> = T extends true ? ExtendedTxnArray<B> : TxnArray
+
+export class Contracts<E extends boolean, B extends 'Uint8Array' | 'Base64'> {
 
   indexer: Indexer
   algod: Algodv2
   MIN_BALANCE_FEE: number
-
+  extendedTransactionFormat: E
+  serverSecret: string | undefined
+  transactionBlobEncoding: B
   /**
    * List one or multiple tokens of an ASA for a fixed price.
    */
-  fixedBid: FixedBid
+  fixedBid: FixedBid<E, B>
+  /**
+   * A revenue sink can be used to let an account receive sales revenue in ASA currencies while they are opted out. This contract will function as an on-chain proof of reserves which the recipient of the revenue can claim when they eventually opt into the ASA currency.
+   */
   acRevenueSink: RevenueSink
 
   constructor(provider: { 
@@ -34,9 +57,27 @@ export class Contracts {
       portNet: string
       token: string | AlgodTokenHeader | CustomTokenHeader |  BaseHTTPClient
     },
+    /**
+     * Overwrite the default min balance fee for ASA opt-ins. Only use this in case the min balance fee changes in the future from the current default of 0.1 Algo.
+     */
     minBalanceFee?: number
+    /**
+     * Extend the return format of the contract functions. When enabled, the functions will not just return the standard AlgoSDK transaction format but will add additional fields to make working with the transactions easier in a server plus client-side setup.
+     */
+    extendedTransactionFormat?: E
+    /**
+     * If a secret is given and the `extendedTransactionFormat` is enabled, the return format will include a signed hash based on the `txID` and signed with the secret. This will enable the system on the server to verify that the submitted transactions from the client were provided by the server and have not been altered.
+     */
+    serverSecret?: string
+    /**
+     * If `extendedTransactionFormat` is enabled, this option will change te encoding of the original transaction in the `blob` field.
+     */
+    transactionBlobEncoding?: B
   }) {
     this.MIN_BALANCE_FEE = provider.minBalanceFee || 100000
+    this.extendedTransactionFormat = provider.extendedTransactionFormat || false as E
+    this.serverSecret = provider.serverSecret || undefined
+    this.transactionBlobEncoding = provider.transactionBlobEncoding || 'Uint8Array' as B
     this.indexer = new Indexer(
       provider.indexer.token, 
       provider.indexer.baseServer,
@@ -47,118 +88,14 @@ export class Contracts {
       provider.algod.baseServer,
       provider.algod.portNet
     )
-    this.fixedBid = new FixedBid(this)
+    this.fixedBid = new FixedBid(this, this.extendedTransactionFormat, this.transactionBlobEncoding)
     this.acRevenueSink = new RevenueSink(this)
   }
-  
-  /**
-   * Generates the `makeApplicationCreateTxn()` transaction for a reserve auction. A different contract gets used depending on the type of currency that the auction uses. 
-   * 
-   * If the `currencyIndex` is not provided or is set to `0`, then Algorand will be used as the auction currency. Otherwise, the provided currency will be used. Note that Algorand and ASA currencies use different contracts.
-   * 
-   * @param {string} params.creatorAddress - Algorand address of the wallet that deploys the auction contract.
-   * @param {string} params.payoutAddress - Algorand address to which the seller share will be paid out to.
-   * @param {string} params.managerAddress - Algorand address to which the manager share will be paid out to.
-   * @param {number} params.sellerShare - Percentage of the funds paid out to the seller of the NFT.
-   * @param {number} params.artistShare - Percentage of the funds paid out to the creator of the NFT.
-   * @param {number} params.managerShare - Percentage of the funds paid out to the manager of the auction.
-   * @param {number} params.reservePrice - Minimum bid amount to start the auction.
-   * @param {number} params.nftIndex - ASA index of the NFT.
-   * @param {number} params.duration - Duration of the auction after the first bid gets placed in Algorand blocks (rounds).
-   * @param {number} params.currencyIndex - ASA index of the currency used to bid and settle the auction.
-   * @param {number} params.extensionTime - Minimum time in blocks left after a bid is placed. If the time is lower than this minimum and a bid is placed then the time gets increased to the minimum. (AKA anti-snipe)
-   * @return Promise<algosdk.Transaction[]> 
-   */
-  // deployAuction (params: DeployAuctionParams) {
-  //   return deployAuction(this, params)
-  // }
 
   /**
-   * Generates transactions to complete the auction setup. The function checks the global state of the auction and balances of the contract address to ensure the auction is still unset.
-   * 
-   * - txns[0]: `pay` - min. balance payment to the contract address
-   * - txns[1]: `appl` - opt the contract into the NFT ASA (and the currency ASA)
-   * - txns[2]: `axfer` transfer NFT to the contract address
-   * 
-   * @param {number} params.appId - Application index of the auction contract.
-   * @return Promise<algosdk.Transaction[]>
+   * Verify if the provided transactions originated from the server by checking the txID against the server signature.
    */
-  // setupAuction (params: SetupAuctionParams) {
-  //   return setupAuction(this, params)
-  // }
-
-  /**
-   * Generates transactions to bid on an existing auction contract. The function will check whether the bid is primary or secondary and modify the transactions accordingly.
-   * 
-   * - txns[0]: `appl` - call the smart contract to update the auction
-   * - txns[1]: `pay` or `axfer` - tranfer the bid to the contract address
-   * 
-   * @param {number} params.appId - Application index of the auction contract.
-   * @param {number} params.amount - The bid amount in either Algo or the auction currency ASA.
-   * @param {string} params.bidderAddress - The Algorand address placing the bid.
-   * @return Promise<algosdk.Transaction[]>
-   */
-  // placeAuctionBid (params: BidParams) {
-  //   return placeAuctionBid(this, params)
-  // }
-
-  /**
-   * Generates transactions to claim the NFT out of the auction contract. If the auction winner has not yet opted into the NFT, the function will return an opt-in transaction in addition to the claim transaction.
-   * 
-   * - tnxs[0]: `axfer` - opt-in transaction
-   * - txns[0 / 1]: `appl` - call the smart contract to claim the NFT
-   * 
-   * @param {number} params.appId - Application index of the auction contract.
-   * @param {string} params.senderAddress - Address of the account sending the transaction (does not have to be the same address as the auction winner)
-   * @returns Promise<algosdk.Transaction[]>
-   */
-  // claimAuctionNFT (params: ClaimNFTParams) {
-  //   return claimAuctionNFT(this, params)
-  // }
-
-  /**
-   * Generates transactions to distribute the funds earned by auction to the shareholders. In the case of Algo auctions, all shares will be paid out at once. For ASA currency auctions, only the shares of shareholders who already opted into the auction currency will be paid out.
-   * 
-   * - txns[0]: `appl` - Call the smart contract to distribute the funds
-   * 
-   * @param {number} params.appId - Application index of the auction contract.
-   * @param {string} params.senderAddress - Address of the account sending the transaction
-   * @returns 
-   */
-  // claimAuctionShares (params: ClaimAuctionSharesParams) {
-  //   return claimAuctionShares(this, params)
-  // }
-
-  /**
-   * Generates transactions to destroy an existing auction contract. Destroying the contract will close out (return) all the contract assets back to the auction creator.
-   * 
-   * Destroying an auction is only available if there are either no bids placed yet, or both the sale funds and the NFT have been claimed after the end of an auction.
-   * 
-   * @param {number} params.appId - Application index of the auction contract.
-   * @return Promise<algosdk.Transaction[]>
-   */
-  // destoryAuction (params: DestoryAuctionParams) {
-  //   return destoryAuction(this, params)
-  // }
-  
-  /**
-   * Fetches and parses the Global State of the auction contract and returns the info in an object.
-   * 
-   * @param {number} params.appId - Application index of the auction contract. 
-   * @returns Promise<GlobalState> 
-   */
-  // getAuctionGlobalState (params: GetAuctionParams) {
-  //   return getAuctionGlobalState(this, params)
-  // }
-
-  /**
-   * Return information about the current state of the contract, including the full Global State and bid history.
-   * 
-   * @param {number} params.appId - Application index of the auction contract. 
-   * @returns
-   */
-  // getAuctionInfo (params: GetAuctionParams) {
-  //   return getAuctionInfo(this, params)
-  // }
+  verifyTxns (txns: Array<ExtendedTxn<B>>) {
+    verifyTxns(this, txns)
+  }
 }
-

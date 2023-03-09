@@ -1,17 +1,16 @@
 import { Provider } from "../../contracts"
 import {
-  Transaction,
   ALGORAND_MIN_TX_FEE,
   isValidAddress,
   makeApplicationNoOpTxn,
   makeAssetTransferTxnWithSuggestedParams,
   encodeUint64,
-  assignGroupID,
   makePaymentTxnWithSuggestedParams
 } from "algosdk"
 import { hashAbiMethod } from "../../functions/abi"
 import { getGlobalState } from './getGlobalState'
 import { addressAssetBalance } from "../../functions/balance"
+import { TxnFormatter } from "../../functions/txn"
 
 export interface BuyFixedBidParams {
   appId: number
@@ -49,6 +48,8 @@ export async function buy(provider: Provider, {
     throw new Error(`The contract only holds ${appNftBalance} NFT token(s) at the moment. Please lower the amount to buy.`)
   }
 
+  const txnFormater = new TxnFormatter(provider)
+
   if (state.currencyIndex >= 0) {
     // AC
 
@@ -62,15 +63,14 @@ export async function buy(provider: Provider, {
       throw new Error('The buyer is not opted into the listing currency.')
     }
 
-    const txns: Array<Transaction> = []
-
     let params = await provider.algod.getTransactionParams().do()
     params.fee = ALGORAND_MIN_TX_FEE
     params.flatFee = true
 
     if (buyerNftBalance === -1) {
-      txns.push(
-        makeAssetTransferTxnWithSuggestedParams(
+      txnFormater.push({
+        description: "Opt your address into the NFT ASA.",
+        txn: makeAssetTransferTxnWithSuggestedParams(
           buyerAddress,
           buyerAddress,
           undefined,
@@ -79,12 +79,14 @@ export async function buy(provider: Provider, {
           undefined,
           state.nftIndex,
           params
-        )
-      )
+        ),
+        signers: [buyerAddress]
+      })
     }
 
-    txns.push(
-      makeAssetTransferTxnWithSuggestedParams(
+    txnFormater.push({
+      description: "Send the payment for the NFTs to the smart contract address.",
+      txn: makeAssetTransferTxnWithSuggestedParams(
         buyerAddress,
         state.contractAddress,
         undefined,
@@ -93,8 +95,9 @@ export async function buy(provider: Provider, {
         undefined,
         state.currencyIndex,
         params
-      )
-    )
+      ),
+      signers: [buyerAddress]
+    })
 
     let baseFee = 2
 
@@ -110,18 +113,19 @@ export async function buy(provider: Provider, {
       baseFee += 1
     }
 
-    txns.push(
-      makeApplicationNoOpTxn(
-        buyerAddress, 
+    txnFormater.push({
+      description: "Call the smart contract to purchase the NFTs.",
+      txn: makeApplicationNoOpTxn(
+        buyerAddress,
         {
           ...params,
           fee: ALGORAND_MIN_TX_FEE * baseFee
-        }, 
-        appId, 
+        },
+        appId,
         [
           hashAbiMethod("buy(uint64)void"),
           encodeUint64(nNFTs)
-        ], 
+        ],
         [
           state.sellerPayoutAddress,
           state.royaltyPayoutAddress,
@@ -132,25 +136,25 @@ export async function buy(provider: Provider, {
           state.nftIndex,
           state.currencyIndex
         ]
-      )
-    )
+      ),
+      signers: [buyerAddress]
+    })
 
-    const txGroup = assignGroupID(txns)
+    txnFormater.assignGroupID()
 
-    return txGroup
+    return txnFormater.getTxns()
 
   } else {
     // Algo
-
-    const txns: Array<Transaction> = []
 
     let params = await provider.algod.getTransactionParams().do()
     params.fee = ALGORAND_MIN_TX_FEE
     params.flatFee = true
 
     if (buyerNftBalance === -1) {
-      txns.push(
-        makeAssetTransferTxnWithSuggestedParams(
+      txnFormater.push({
+        description: "Opt your address into the NFT ASA.",
+        txn: makeAssetTransferTxnWithSuggestedParams(
           buyerAddress,
           buyerAddress,
           undefined,
@@ -159,20 +163,23 @@ export async function buy(provider: Provider, {
           undefined,
           state.nftIndex,
           params
-        )
-      )
+        ),
+        signers: [buyerAddress]
+      })
     }
 
-    txns.push(
-      makePaymentTxnWithSuggestedParams(
+    txnFormater.push({
+      description: "Send the payment for the NFTs to the smart contract address.",
+      txn: makePaymentTxnWithSuggestedParams(
         buyerAddress,
         state.contractAddress,
         nNFTs * state.unitPrice,
         undefined,
         undefined,
         params
-      )
-    )
+      ),
+      signers: [buyerAddress]
+    })
 
     let baseFee = 2
 
@@ -188,8 +195,9 @@ export async function buy(provider: Provider, {
       baseFee += 1
     }
 
-    txns.push(
-      makeApplicationNoOpTxn(
+    txnFormater.push({
+      description: "Call the smart contract to purchase the NFTs.",
+      txn: makeApplicationNoOpTxn(
         buyerAddress, 
         {
           ...params,
@@ -209,11 +217,12 @@ export async function buy(provider: Provider, {
         [
           state.nftIndex
         ]
-      )
-    )
+      ),
+      signers: [buyerAddress]
+    })
 
-    const txGroup = assignGroupID(txns)
+    txnFormater.assignGroupID()
 
-    return txGroup
+    return txnFormater.getTxns()
   }
 }

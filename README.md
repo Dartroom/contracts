@@ -10,3 +10,7 @@ Planned future expansion:
 - On-chain contract discovery
 
 The interface gets the parameters for the specific contract function and returns an array of transactions that only need to be signed before they can be committed to the network.
+
+Contracts:
+- [Fixed bid](src/interface/fixedBid/README.md)
+- [ASA currency revenue sink](src/interface/acRevenueSink/README.md)
