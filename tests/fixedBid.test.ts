@@ -2,6 +2,8 @@ import { Contracts } from '../index'
 import { writeFileSync } from 'node:fs'
 import algosdk, { createDryrun, decodeSignedTransaction } from "algosdk"
 
+const algodToken = ''
+
 const c = new Contracts({
   indexer: {
     token: "",
@@ -9,7 +11,7 @@ const c = new Contracts({
     baseServer: "https://algoindexer.testnet.algoexplorerapi.io",
   },
   algod: {
-    token: {'X-API-key' : ''},
+    token: {'X-API-key' : algodToken },
     portNet: "",
     baseServer: "https://testnet-algorand.api.purestake.io/ps2",
   }

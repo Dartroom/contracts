@@ -1,4 +1,5 @@
 import { Provider } from "../../contracts"
+import { TxnFormatter } from "../../functions/txn"
 import { getGlobalState } from './getGlobalState'
 import { addressAssetBalance } from "../../functions/balance"
 import { hashAbiMethod } from "../../functions/abi"
@@ -6,8 +7,7 @@ import {
   ALGORAND_MIN_TX_FEE,
   makePaymentTxnWithSuggestedParams,
   makeApplicationNoOpTxn,
-  makeAssetTransferTxnWithSuggestedParams,
-  assignGroupID
+  makeAssetTransferTxnWithSuggestedParams
 } from "algosdk"
 
 export interface SetupFixedBidParams {
@@ -32,47 +32,51 @@ export async function setup(provider: Provider, {
     throw new Error('The listing is already set.')
   }
 
+  const txnFormater = new TxnFormatter(provider)
+
   let params = await provider.algod.getTransactionParams().do()
   params.fee = ALGORAND_MIN_TX_FEE
   params.flatFee = true
 
   if (state.currencyIndex >= 0) {
 
-    const txns = []
-
     const accounts = [
       state.sellerPayoutAddress, // seller sink,
       state.royaltyPayoutAddress // royalty sink
     ]
 
-    txns.push(
-        makePaymentTxnWithSuggestedParams(
+    txnFormater.push({
+      description: "Send the necessary minimum balance to the contract address to make it operational.",
+      txn: makePaymentTxnWithSuggestedParams(
         state.creatorAddress, 
         state.contractAddress, 
         provider.MIN_BALANCE_FEE * 3, 
         undefined, 
         undefined, 
         params
-      )
-    )
+      ),
+      signers: [state.creatorAddress]
+    })
 
-    txns.push(
-      makeApplicationNoOpTxn(
-        state.creatorAddress, 
+    txnFormater.push({
+      description: "Call the smart contract to opt it into the NFT and currency ASAs.",
+      txn: makeApplicationNoOpTxn(
+        state.creatorAddress,
         {
           ...params,
           fee: ALGORAND_MIN_TX_FEE * 3
-        }, 
-        appId, 
-        [hashAbiMethod("setup()void")], 
-        accounts, 
-        [], 
+        },
+        appId,
+        [hashAbiMethod("setup()void")],
+        accounts,
+        [],
         [
-          state.nftIndex, 
+          state.nftIndex,
           state.currencyIndex
         ]
-      )
-    )
+      ),
+      signers: [state.creatorAddress]
+    })
 
     if (nNFTs) {
 
@@ -80,8 +84,9 @@ export async function setup(provider: Provider, {
         throw new Error('nNFTs must be a positive integer.')
       }
 
-      txns.push(
-        makeAssetTransferTxnWithSuggestedParams(
+      txnFormater.push({
+        description: "Deposit the NFTs into the listing contract to offer them for sale.",
+        txn: makeAssetTransferTxnWithSuggestedParams(
           state.creatorAddress, 
           state.contractAddress, 
           undefined, 
@@ -90,32 +95,34 @@ export async function setup(provider: Provider, {
           undefined, 
           state.nftIndex, 
           params
-        )
-      )
+        ),
+        signers: [state.creatorAddress]
+      })
     }
     
-    const txGroup = assignGroupID(txns)
+    txnFormater.assignGroupID()
 
-    return txGroup
+    return txnFormater.getTxns()
 
   } else {
     // Algo Fixed Bid
 
-    const txns = []
-
-    txns.push(
-        makePaymentTxnWithSuggestedParams(
+    txnFormater.push({
+      description: "Send the necessary minimum balance to the contract address to make it operational.",
+      txn: makePaymentTxnWithSuggestedParams(
         state.creatorAddress, 
         state.contractAddress, 
         provider.MIN_BALANCE_FEE * 2, 
         undefined, 
         undefined, 
         params
-      )
-    )
+      ),
+      signers: [state.creatorAddress]
+    })
 
-    txns.push(
-      makeApplicationNoOpTxn(
+    txnFormater.push({
+      description: "Call the smart contract to opt it into the NFT and currency ASAs.",
+      txn: makeApplicationNoOpTxn(
         state.creatorAddress, 
         {
           ...params,
@@ -128,8 +135,9 @@ export async function setup(provider: Provider, {
         [
           state.nftIndex
         ]
-      )
-    )
+      ),
+      signers: [state.creatorAddress]
+    })
 
     if (nNFTs) {
 
@@ -137,8 +145,9 @@ export async function setup(provider: Provider, {
         throw new Error('nNFTs must be a positive integer.')
       }
 
-      txns.push(
-        makeAssetTransferTxnWithSuggestedParams(
+      txnFormater.push({
+        description: "Deposit the NFTs into the listing contract to offer them for sale.",
+        txn: makeAssetTransferTxnWithSuggestedParams(
           state.creatorAddress, 
           state.contractAddress, 
           undefined, 
@@ -147,12 +156,13 @@ export async function setup(provider: Provider, {
           undefined, 
           state.nftIndex, 
           params
-        )
-      )
+        ),
+        signers: [state.creatorAddress]
+      })
     }
     
-    const txGroup = assignGroupID(txns)
+    txnFormater.assignGroupID()
 
-    return txGroup
+    return txnFormater.getTxns()
   }
 }

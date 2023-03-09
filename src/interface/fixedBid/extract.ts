@@ -2,9 +2,9 @@ import { Provider } from "../../contracts"
 import { getGlobalState } from './getGlobalState'
 import { addressAssetBalance } from "../../functions/balance"
 import { hashAbiMethod } from "../../functions/abi"
+import { TxnFormatter } from "../../functions/txn"
 import { 
   ALGORAND_MIN_TX_FEE,
-  Transaction,
   makeApplicationNoOpTxn,
   encodeUint64
 } from "algosdk"
@@ -34,14 +34,15 @@ export async function extract(provider: Provider, {
     throw new Error(`The contract only holds ${appNftBalance} NFT token(s) at the moment. Please lower the amount to extract.`)
   }
 
-  const txns: Array<Transaction> = []
+  const txnFormater = new TxnFormatter(provider)
 
   let params = await provider.algod.getTransactionParams().do()
   params.fee = ALGORAND_MIN_TX_FEE
   params.flatFee = true
 
-  txns.push(
-    makeApplicationNoOpTxn(
+  txnFormater.push({
+    description: "Call the smart contract to remove NFTs from the listing.",
+    txn: makeApplicationNoOpTxn(
       state.creatorAddress, 
       {
         ...params,
@@ -57,8 +58,9 @@ export async function extract(provider: Provider, {
       [
         state.nftIndex
       ]
-    )
-  )
+    ),
+    signers: [state.creatorAddress]
+  })
 
-  return txns
+  return txnFormater.getTxns()
 }
