@@ -1,9 +1,20 @@
 import { Indexer, Algodv2, BaseHTTPClient, Transaction } from "algosdk"
-import { AlgodTokenHeader, CustomTokenHeader, IndexerTokenHeader } from "algosdk/src/client/urlTokenBaseHTTPClient"
 import { FixedBid } from './interface/fixedBid/index'
 import { RevenueSink } from './interface/acRevenueSink/index'
 import { verifyTxns } from './functions/verify'
 import { TxnFormatter } from "./functions/txn"
+
+export interface AlgodTokenHeader {
+  'X-Algo-API-Token': string;
+}
+
+export interface IndexerTokenHeader {
+  'X-Indexer-API-Token': string;
+}
+
+export interface CustomTokenHeader {
+  [headerName: string]: string;
+}
 
 export interface Provider {
   indexer: Indexer
