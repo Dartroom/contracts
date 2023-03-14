@@ -2,8 +2,8 @@ import { sha512_256 } from 'js-sha512'
 import type { ExtendedTxn, Provider } from "../contracts"
 import { decodeSignedTransaction } from 'algosdk'
 
-export function verifyTxns<B>(provider: Provider, txns: Array<ExtendedTxn<B>>) {
-  if (provider.serverSecret) {
+export function verifyTxns(provider: Provider, txns: Array<ExtendedTxn<'Uint8Array' | 'Base64', boolean, boolean>>) {
+  if (provider.signature && provider.serverSecret) {
     for (let i = 0; i < txns.length; i++) {
       const txn = txns[0]
   
@@ -22,7 +22,7 @@ export function verifyTxns<B>(provider: Provider, txns: Array<ExtendedTxn<B>>) {
   }
 }
 
-export function decodeTxn<B>(provider: Provider, txn: ExtendedTxn<B>['blob']) {
+export function decodeTxn(provider: Provider, txn: Uint8Array | string) {
   if (provider.transactionBlobEncoding === 'Uint8Array') {
     return decodeSignedTransaction(txn as Uint8Array)
   } else {

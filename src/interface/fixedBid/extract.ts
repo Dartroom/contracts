@@ -3,6 +3,7 @@ import { getGlobalState } from './getGlobalState'
 import { addressAssetBalance } from "../../functions/balance"
 import { hashAbiMethod } from "../../functions/abi"
 import { TxnFormatter } from "../../functions/txn"
+import { resolveObject } from '../../functions/promise'
 import { 
   ALGORAND_MIN_TX_FEE,
   makeApplicationNoOpTxn,
@@ -20,7 +21,12 @@ export async function extract(provider: Provider, {
 }: ExtractFixedBidParams) {
 
   const state = await getGlobalState(provider,{ appId })
-  const appNftBalance = await addressAssetBalance(provider.indexer, state.contractAddress, state.nftIndex)
+
+  const { appNftBalance, params, account } = await resolveObject({
+    appNftBalance: addressAssetBalance(provider.indexer, state.contractAddress, state.nftIndex),
+    params: provider.algod.getTransactionParams().do(),
+    account: provider.algod.accountInformation(state.creatorAddress).do()
+  })
   
   if (appNftBalance === -1) {
     throw new Error('The listing still needs to be set up. It is currently not opted into the NFT.')
@@ -36,7 +42,6 @@ export async function extract(provider: Provider, {
 
   const txnFormater = new TxnFormatter(provider)
 
-  let params = await provider.algod.getTransactionParams().do()
   params.fee = ALGORAND_MIN_TX_FEE
   params.flatFee = true
 
@@ -59,7 +64,8 @@ export async function extract(provider: Provider, {
         state.nftIndex
       ]
     ),
-    signers: [state.creatorAddress]
+    signers: [state.creatorAddress],
+    authAddress: account['auth-addr'] || state.creatorAddress
   })
 
   return txnFormater.getTxns()

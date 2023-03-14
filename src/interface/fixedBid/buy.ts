@@ -11,6 +11,7 @@ import { hashAbiMethod } from "../../functions/abi"
 import { getGlobalState } from './getGlobalState'
 import { addressAssetBalance } from "../../functions/balance"
 import { TxnFormatter } from "../../functions/txn"
+import { resolveObject } from '../../functions/promise'
 
 export interface BuyFixedBidParams {
   appId: number
@@ -33,8 +34,13 @@ export async function buy(provider: Provider, {
   }
   
   const state = await getGlobalState(provider,{ appId })
-  const appNftBalance = await addressAssetBalance(provider.indexer, state.contractAddress, state.nftIndex)
-  const buyerNftBalance = await addressAssetBalance(provider.indexer, buyerAddress, state.nftIndex)
+
+  const { appNftBalance, buyerNftBalance, params, account } = await resolveObject({
+    appNftBalance: addressAssetBalance(provider.indexer, state.contractAddress, state.nftIndex),
+    buyerNftBalance: addressAssetBalance(provider.indexer, buyerAddress, state.nftIndex),
+    params: provider.algod.getTransactionParams().do(),
+    account: provider.algod.accountInformation(buyerAddress).do()
+  })
 
   if (appNftBalance === -1) {
     throw new Error('The listing still needs to be set up. It is currently not opted into the NFT.')
@@ -63,7 +69,6 @@ export async function buy(provider: Provider, {
       throw new Error('The buyer is not opted into the listing currency.')
     }
 
-    let params = await provider.algod.getTransactionParams().do()
     params.fee = ALGORAND_MIN_TX_FEE
     params.flatFee = true
 
@@ -80,7 +85,8 @@ export async function buy(provider: Provider, {
           state.nftIndex,
           params
         ),
-        signers: [buyerAddress]
+        signers: [buyerAddress],
+        authAddress: account['auth-addr'] || buyerAddress
       })
     }
 
@@ -96,7 +102,8 @@ export async function buy(provider: Provider, {
         state.currencyIndex,
         params
       ),
-      signers: [buyerAddress]
+      signers: [buyerAddress],
+      authAddress: account['auth-addr'] || buyerAddress
     })
 
     let baseFee = 2
@@ -137,7 +144,8 @@ export async function buy(provider: Provider, {
           state.currencyIndex
         ]
       ),
-      signers: [buyerAddress]
+      signers: [buyerAddress],
+      authAddress: account['auth-addr'] || buyerAddress
     })
 
     txnFormater.assignGroupID()
@@ -147,7 +155,6 @@ export async function buy(provider: Provider, {
   } else {
     // Algo
 
-    let params = await provider.algod.getTransactionParams().do()
     params.fee = ALGORAND_MIN_TX_FEE
     params.flatFee = true
 
@@ -164,7 +171,8 @@ export async function buy(provider: Provider, {
           state.nftIndex,
           params
         ),
-        signers: [buyerAddress]
+        signers: [buyerAddress],
+        authAddress: account['auth-addr'] || buyerAddress
       })
     }
 
@@ -178,7 +186,8 @@ export async function buy(provider: Provider, {
         undefined,
         params
       ),
-      signers: [buyerAddress]
+      signers: [buyerAddress],
+      authAddress: account['auth-addr'] || buyerAddress
     })
 
     let baseFee = 2
@@ -218,7 +227,8 @@ export async function buy(provider: Provider, {
           state.nftIndex
         ]
       ),
-      signers: [buyerAddress]
+      signers: [buyerAddress],
+      authAddress: account['auth-addr'] || buyerAddress
     })
 
     txnFormater.assignGroupID()

@@ -8,6 +8,7 @@ import {
   encodeUint64,
 } from "algosdk"
 import { convertProgram } from "../../functions/program"
+import { resolveObject } from '../../functions/promise'
 
 import acApprovalProgram from '../../contracts/acFixedBid/approval'
 import acClearProgram from '../../contracts/acFixedBid/clearState'
@@ -71,6 +72,14 @@ export async function deploy(provider: Provider, {
 
   const txnFormater = new TxnFormatter(provider)
 
+  const { params, account } = await resolveObject({
+    params: provider.algod.getTransactionParams().do(),
+    account: provider.algod.accountInformation(sellerAddress).do()
+  })
+
+  params.fee = ALGORAND_MIN_TX_FEE
+  params.flatFee = true
+
   if (currencyIndex && currencyIndex !== 0) {
     // AC Fixed Bid
 
@@ -86,10 +95,6 @@ export async function deploy(provider: Provider, {
     // min balance storage:   0,421 Algo
     // min balance deposit:   0,3   Algo
     // total min balance:     0,821 Algo
-
-    let params = await provider.algod.getTransactionParams().do()
-    params.fee = ALGORAND_MIN_TX_FEE
-    params.flatFee = true
 
     const appArgs = [
       encodeUint64(price),
@@ -128,7 +133,8 @@ export async function deploy(provider: Provider, {
     txnFormater.push({
       description: "Deploy the fixed bid listing contract to the network.",
       txn: txn,
-      signers: [sellerAddress]
+      signers: [sellerAddress],
+      authAddress: account['auth-addr'] || sellerAddress
     })
 
     return txnFormater.getTxns()
@@ -148,10 +154,6 @@ export async function deploy(provider: Provider, {
     // min balance storage:   0,2925 Algo
     // min balance deposit:   0,2   Algo
     // total min balance:     0,5925 Algo
-
-    let params = await provider.algod.getTransactionParams().do()
-    params.fee = ALGORAND_MIN_TX_FEE
-    params.flatFee = true
 
     const appArgs = [
       encodeUint64(price),
@@ -189,7 +191,8 @@ export async function deploy(provider: Provider, {
     txnFormater.push({
       description: "Deploy the fixed bid listing contract to the network.",
       txn: txn,
-      signers: [sellerAddress]
+      signers: [sellerAddress],
+      authAddress: account['auth-addr'] || sellerAddress
     })
 
     return txnFormater.getTxns()
