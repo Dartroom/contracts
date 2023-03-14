@@ -2,6 +2,7 @@ import { Provider } from "../../contracts"
 import { getGlobalState } from './getGlobalState'
 import { TxnFormatter } from "../../functions/txn"
 import { hashAbiMethod } from "../../functions/abi"
+import { resolveObject } from '../../functions/promise'
 import { 
   ALGORAND_MIN_TX_FEE,
   makeApplicationNoOpTxn,
@@ -20,11 +21,15 @@ export async function updatePrice(provider: Provider, {
   
   const state = await getGlobalState(provider,{ appId })
 
-  const txnFormater = new TxnFormatter(provider)
-
-  let params = await provider.algod.getTransactionParams().do()
+  const { params, account } = await resolveObject({
+    params: provider.algod.getTransactionParams().do(),
+    account: provider.algod.accountInformation(state.creatorAddress).do()
+  })
+  
   params.fee = ALGORAND_MIN_TX_FEE
   params.flatFee = true
+
+  const txnFormater = new TxnFormatter(provider)
 
   txnFormater.push({
     description: "Call the smart contract to update the unit price of the listing.",
@@ -43,7 +48,8 @@ export async function updatePrice(provider: Provider, {
       [],
       []
     ),
-    signers: [state.creatorAddress]
+    signers: [state.creatorAddress],
+    authAddress: account['auth-addr'] || state.creatorAddress
   })
 
   return txnFormater.getTxns()

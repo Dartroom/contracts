@@ -2,6 +2,7 @@ import { Provider } from "../../contracts"
 import { getGlobalState } from './getGlobalState'
 import { addressAssetBalance } from "../../functions/balance"
 import { TxnFormatter } from "../../functions/txn"
+import { resolveObject } from '../../functions/promise'
 import { 
   ALGORAND_MIN_TX_FEE,
   makeApplicationDeleteTxn
@@ -16,14 +17,17 @@ export async function destroy(provider: Provider, {
 }: DestroyFixedBidParams) {
  
   const state = await getGlobalState(provider,{ appId })
-  const appNftBalance = await addressAssetBalance(provider.indexer, state.contractAddress, state.nftIndex)
+
+  const { appNftBalance, params, account } = await resolveObject({
+    appNftBalance: addressAssetBalance(provider.indexer, state.contractAddress, state.nftIndex),
+    params: provider.algod.getTransactionParams().do(),
+    account: provider.algod.accountInformation(state.creatorAddress).do()
+  })
 
   const txnFormater = new TxnFormatter(provider)
 
   if (state.currencyIndex >= 0) {
     // ASA listing
-
-    let params = await provider.algod.getTransactionParams().do()
     params.fee = ALGORAND_MIN_TX_FEE * (appNftBalance >= 0 ? 4 : 2 )
     params.flatFee = true
 
@@ -41,15 +45,14 @@ export async function destroy(provider: Provider, {
           state.currencyIndex
         ]
       ),
-      signers: [state.creatorAddress]
+      signers: [state.creatorAddress],
+      authAddress: account['auth-addr'] || state.creatorAddress
     })
 
     return txnFormater.getTxns()
 
   } else {
     // Algo listing
-
-    let params = await provider.algod.getTransactionParams().do()
     params.fee = ALGORAND_MIN_TX_FEE * (appNftBalance >= 0 ? 3 : 2 )
     params.flatFee = true
 
@@ -66,7 +69,8 @@ export async function destroy(provider: Provider, {
           state.nftIndex
         ]
       ),
-      signers: [state.creatorAddress]
+      signers: [state.creatorAddress],
+      authAddress: account['auth-addr'] || state.creatorAddress
     })
 
     return txnFormater.getTxns()

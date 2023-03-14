@@ -12,7 +12,9 @@ const c = new Contracts({
     token: {'X-API-key' : ''},
     portNet: "",
     baseServer: "https://testnet-algorand.api.purestake.io/ps2",
-  }
+  },
+  signature: false,
+  authAddress: false
 })
 
 const sellerAccount = algosdk.mnemonicToSecretKey('')

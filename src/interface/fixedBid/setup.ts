@@ -3,6 +3,7 @@ import { TxnFormatter } from "../../functions/txn"
 import { getGlobalState } from './getGlobalState'
 import { addressAssetBalance } from "../../functions/balance"
 import { hashAbiMethod } from "../../functions/abi"
+import { resolveObject } from '../../functions/promise'
 import { 
   ALGORAND_MIN_TX_FEE,
   makePaymentTxnWithSuggestedParams,
@@ -26,15 +27,19 @@ export async function setup(provider: Provider, {
 }: SetupFixedBidParams) {
   
   const state = await getGlobalState(provider,{ appId })
-  const appNftBalance = await addressAssetBalance(provider.indexer, state.contractAddress, state.nftIndex)
+  
+  const txnFormater = new TxnFormatter(provider)
+
+  const { appNftBalance, params, account } = await resolveObject({
+    appNftBalance: addressAssetBalance(provider.indexer, state.contractAddress, state.nftIndex),
+    params: provider.algod.getTransactionParams().do(),
+    account: provider.algod.accountInformation(state.creatorAddress).do()
+  })
 
   if (appNftBalance !== -1) {
     throw new Error('The listing is already set.')
   }
 
-  const txnFormater = new TxnFormatter(provider)
-
-  let params = await provider.algod.getTransactionParams().do()
   params.fee = ALGORAND_MIN_TX_FEE
   params.flatFee = true
 
@@ -55,7 +60,8 @@ export async function setup(provider: Provider, {
         undefined, 
         params
       ),
-      signers: [state.creatorAddress]
+      signers: [state.creatorAddress],
+      authAddress: account['auth-addr'] || state.creatorAddress
     })
 
     txnFormater.push({
@@ -75,7 +81,8 @@ export async function setup(provider: Provider, {
           state.currencyIndex
         ]
       ),
-      signers: [state.creatorAddress]
+      signers: [state.creatorAddress],
+      authAddress: account['auth-addr'] || state.creatorAddress
     })
 
     if (nNFTs) {
@@ -96,7 +103,8 @@ export async function setup(provider: Provider, {
           state.nftIndex, 
           params
         ),
-        signers: [state.creatorAddress]
+        signers: [state.creatorAddress],
+        authAddress: account['auth-addr'] || state.creatorAddress
       })
     }
     
@@ -117,7 +125,8 @@ export async function setup(provider: Provider, {
         undefined, 
         params
       ),
-      signers: [state.creatorAddress]
+      signers: [state.creatorAddress],
+      authAddress: account['auth-addr'] || state.creatorAddress
     })
 
     txnFormater.push({
@@ -136,7 +145,8 @@ export async function setup(provider: Provider, {
           state.nftIndex
         ]
       ),
-      signers: [state.creatorAddress]
+      signers: [state.creatorAddress],
+      authAddress: account['auth-addr'] || state.creatorAddress
     })
 
     if (nNFTs) {
@@ -157,7 +167,8 @@ export async function setup(provider: Provider, {
           state.nftIndex, 
           params
         ),
-        signers: [state.creatorAddress]
+        signers: [state.creatorAddress],
+        authAddress: account['auth-addr'] || state.creatorAddress
       })
     }
     

@@ -2,7 +2,7 @@ import { Contracts } from '../index'
 import algosdk, { decodeUnsignedTransaction } from "algosdk"
 
 const algodToken = ''
-const serverSecret = ''
+const serverSecret = 'test'
 const sellerAccount = algosdk.mnemonicToSecretKey('')  
 
 test('Server signature', async () => {
@@ -20,7 +20,9 @@ test('Server signature', async () => {
     },
     extendedTransactionFormat: true,
     serverSecret: serverSecret,
-    transactionBlobEncoding: 'Uint8Array'
+    transactionBlobEncoding: 'Uint8Array',
+    authAddress: true,
+    signature: true
   })
   
   const txns = await c.fixedBid.deploy({
@@ -64,7 +66,9 @@ test('Base64 formating', async () => {
     },
     extendedTransactionFormat: true,
     serverSecret: serverSecret,
-    transactionBlobEncoding: 'Base64'
+    transactionBlobEncoding: 'Base64',
+    authAddress: false,
+    signature: true
   })
 
   const txns = await c.fixedBid.deploy({

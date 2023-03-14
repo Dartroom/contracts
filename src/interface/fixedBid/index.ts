@@ -9,11 +9,11 @@ import { getGlobalState, GetGlobalStateFixedBidParams } from './getGlobalState'
 import { Contracts, Provider } from '../../contracts'
 import type { ExtendOrDefault } from "../../contracts"
 
-export class FixedBid<E extends boolean, B extends 'Uint8Array' | 'Base64'> {
+export class FixedBid<E extends boolean, B extends 'Uint8Array' | 'Base64', S extends boolean, A extends boolean> {
 
   private provider: Provider
 
-  constructor(provider: Provider, extTxn: E, encoding: B) {
+  constructor(provider: Provider, extTxn: E, encoding: B, signed: S, auth: A) {
     this.provider = provider
   }
 
@@ -34,8 +34,8 @@ export class FixedBid<E extends boolean, B extends 'Uint8Array' | 'Base64'> {
    * @param {number} params.currencyIndex - ASA index of the currency used to settle the listing.
    * @return Promise<algosdk.Transaction[]>
    */
-  deploy(params: DeployFixedBidParams): Promise<ExtendOrDefault<E, B>> {
-    return deploy(this.provider, params) as Promise<ExtendOrDefault<E, B>>
+  deploy(params: DeployFixedBidParams): Promise<ExtendOrDefault<E, B, S, A>> {
+    return deploy(this.provider, params) as Promise<ExtendOrDefault<E, B, S, A>>
   }
 
   /**
@@ -49,8 +49,8 @@ export class FixedBid<E extends boolean, B extends 'Uint8Array' | 'Base64'> {
    * @param {number} params.nNFTs - Number of NFTs to be deposited into the contract.
    * @returns Promise<algosdk.Transaction[]>
    */
-  setup (params: SetupFixedBidParams): Promise<ExtendOrDefault<E, B>> {
-    return setup(this.provider, params) as Promise<ExtendOrDefault<E, B>>
+  setup (params: SetupFixedBidParams): Promise<ExtendOrDefault<E, B, S, A>> {
+    return setup(this.provider, params) as Promise<ExtendOrDefault<E, B, S, A>>
   }
 
   /**
@@ -62,8 +62,8 @@ export class FixedBid<E extends boolean, B extends 'Uint8Array' | 'Base64'> {
    * @param {number} params.nNFTs - Number of NFTs to be deposited into the contract.
    * @returns Promise<algosdk.Transaction[]>
    */
-  deposit (params: DepositFixedBidParams): Promise<ExtendOrDefault<E, B>>  {
-    return deposit(this.provider, params) as Promise<ExtendOrDefault<E, B>>
+  deposit (params: DepositFixedBidParams): Promise<ExtendOrDefault<E, B, S, A>>  {
+    return deposit(this.provider, params) as Promise<ExtendOrDefault<E, B, S, A>>
   }
 
   /**
@@ -77,8 +77,8 @@ export class FixedBid<E extends boolean, B extends 'Uint8Array' | 'Base64'> {
    * @param {number} params.unitPrice - Number of NFTs to be deposited into the contract.
    * @returns Promise<algosdk.Transaction[]>
    */
-  updatePrice(params: UpdatePriceFixedBidParams): Promise<ExtendOrDefault<E, B>>  {
-    return updatePrice(this.provider, params) as Promise<ExtendOrDefault<E, B>>
+  updatePrice(params: UpdatePriceFixedBidParams): Promise<ExtendOrDefault<E, B, S, A>>  {
+    return updatePrice(this.provider, params) as Promise<ExtendOrDefault<E, B, S, A>>
   }
 
   /**
@@ -111,8 +111,8 @@ export class FixedBid<E extends boolean, B extends 'Uint8Array' | 'Base64'> {
    * @param {string} params.buyerAddress - Algorand address of the buyer.
    * @returns Promise<algosdk.Transaction[]>
    */
-  buy(params: BuyFixedBidParams): Promise<ExtendOrDefault<E, B>>  {
-    return buy(this.provider, params) as Promise<ExtendOrDefault<E, B>>
+  buy(params: BuyFixedBidParams): Promise<ExtendOrDefault<E, B, S, A>>  {
+    return buy(this.provider, params) as Promise<ExtendOrDefault<E, B, S, A>>
   }
 
   /**
@@ -125,8 +125,8 @@ export class FixedBid<E extends boolean, B extends 'Uint8Array' | 'Base64'> {
    * @param {number} params.nNFTs - Number of NFTs to be extract from the contract.
    * @returns Promise<algosdk.Transaction[]>
    */
-  extract (params: ExtractFixedBidParams): Promise<ExtendOrDefault<E, B>>  {
-    return extract(this.provider, params) as Promise<ExtendOrDefault<E, B>>
+  extract (params: ExtractFixedBidParams): Promise<ExtendOrDefault<E, B, S, A>>  {
+    return extract(this.provider, params) as Promise<ExtendOrDefault<E, B, S, A>>
   }
 
   /**
@@ -140,8 +140,8 @@ export class FixedBid<E extends boolean, B extends 'Uint8Array' | 'Base64'> {
    * @param {number} params.appId - App ID of the listing contract.
    * @returns Promise<algosdk.Transaction[]>
    */
-  destroy (params: DestroyFixedBidParams): Promise<ExtendOrDefault<E, B>>  {
-    return destroy(this.provider, params) as Promise<ExtendOrDefault<E, B>>
+  destroy (params: DestroyFixedBidParams): Promise<ExtendOrDefault<E, B, S, A>>  {
+    return destroy(this.provider, params) as Promise<ExtendOrDefault<E, B, S, A>>
   }
 
   /**
