@@ -43,18 +43,12 @@ export class TxnFormatter<E, B, S, A> {
 
       if (txn) {
         if (this.provider.extendedTransactionFormat) {
-          const txID = txn.txn.txID()
 
           let format = {
             description: txn.description,
             txn: decodeUnsignedTransaction(encodeUnsignedTransaction(txn.txn)),
-            txID: txID,
             signers: txn.signers,
           } as ExtendedTxnUnEncoded
-
-          if (this.signature) {
-            format['signature'] = this.signTxn(txID)
-          }
 
           if (this.authAddress) {
             format['authAddress'] = txn.authAddress || txn.signers[0]
@@ -99,10 +93,20 @@ export class TxnFormatter<E, B, S, A> {
       const tnxs = this.txns.map((unencodedTxn) => {
         const { txn, ...data } = unencodedTxn as ExtendedTxnUnEncoded
 
-        return {
+        const txID = txn.txID()
+
+        const format = {
           ...data,
-          blob: this.encodeTxn(txn)
+          blob: this.encodeTxn(txn),
+          txID: txn.txID()
+
         }
+
+        if (this.signature) {
+          format['signature'] = this.signTxn(txID)
+        }
+
+        return format
       })
 
       return tnxs as unknown as ExtendOrDefault<E, B, S, A>
