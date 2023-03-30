@@ -30,5 +30,6 @@ export async function getGlobalState({ indexer }: Provider, {
     royaltyRevenueSink: getGlobalAddress(state, 'royalty_revenue_sink'),
     creatorAddress: app.application.params.creator as string,
     contractAddress: getApplicationAddress(appId),
+    deleted: app.application.deleted as boolean,
   }
 }

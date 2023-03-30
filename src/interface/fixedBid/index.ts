@@ -6,6 +6,7 @@ import { extract, ExtractFixedBidParams } from './extract'
 import { updatePrice, UpdatePriceFixedBidParams } from './updatePrice'
 import { destroy, DestroyFixedBidParams } from './destroy'
 import { getGlobalState, GetGlobalStateFixedBidParams } from './getGlobalState'
+import { getStatus, GetStatusFixedBidParams } from './getStatus'
 import { Contracts, Provider } from '../../contracts'
 import type { ExtendOrDefault } from "../../contracts"
 
@@ -150,7 +151,14 @@ export class FixedBid<E extends boolean, B extends 'Uint8Array' | 'Base64', S ex
    * @param {number} params.appId - Application index of the listing contract. 
    * @returns Promise<GlobalState> 
    */
-    getGlobalState(params: GetGlobalStateFixedBidParams) {
+  getGlobalState(params: GetGlobalStateFixedBidParams) {
     return getGlobalState(this.provider, params)
+  }
+
+  /**
+   * 
+   */
+  getStatus(params: GetStatusFixedBidParams) {
+    return getStatus(this.provider, params)
   }
 }
