@@ -53,8 +53,8 @@ export async function setup(provider: Provider, {
     txnFormater.push({
       description: "Send the necessary minimum balance to the contract address to make it operational.",
       txn: makePaymentTxnWithSuggestedParams(
-        state.creatorAddress, 
-        state.contractAddress, 
+        state.creatorAddress,
+        state.contractAddress,
         provider.MIN_BALANCE_FEE * 3, 
         undefined, 
         undefined, 

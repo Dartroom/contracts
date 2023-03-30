@@ -6,18 +6,11 @@ export function verifyTxns(provider: Provider, txns: Array<ExtendedTxn<'Uint8Arr
   if (provider.signature && provider.serverSecret) {
     for (let i = 0; i < txns.length; i++) {
       const txn = txns[i]
-
-      console.log(txn)
   
       if (txn) {
         const decodedTxn = decodeTxn(provider, txn.blob)
-
-        console.log(provider.serverSecret)
-        console.log(decodedTxn.txn.txID())
   
         const txnSignature = sha512_256.hmac(provider.serverSecret, decodedTxn.txn.txID())
-
-        console.log(txnSignature)
   
         if (txnSignature !== txn.signature) {
           throw new Error(`Transaction ${i} has an invalid signature. This transaction was either modified on the client side or was not requested from the server before signing.`)
