@@ -2,7 +2,6 @@ import { Provider } from "../../contracts"
 import { getGlobalState } from './getGlobalState'
 import { TxnFormatter } from "../../functions/txn"
 import { hashAbiMethod } from "../../functions/abi"
-import { resolveObject } from '../../functions/promise'
 import { 
   ALGORAND_MIN_TX_FEE,
   makeApplicationNoOpTxn,
@@ -21,10 +20,10 @@ export async function updatePrice(provider: Provider, {
   
   const state = await getGlobalState(provider,{ appId })
 
-  const { params, account } = await resolveObject({
-    params: provider.algod.getTransactionParams().do(),
-    account: provider.algod.accountInformation(state.creatorAddress).do()
-  })
+  const [params, account] = await Promise.all([
+    provider.algod.getTransactionParams().do(),
+    provider.algod.accountInformation(state.creatorAddress).do()
+  ])
   
   params.fee = ALGORAND_MIN_TX_FEE
   params.flatFee = true

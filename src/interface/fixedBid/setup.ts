@@ -3,7 +3,6 @@ import { TxnFormatter } from "../../functions/txn"
 import { getGlobalState } from './getGlobalState'
 import { addressAssetBalance } from "../../functions/balance"
 import { hashAbiMethod } from "../../functions/abi"
-import { resolveObject } from '../../functions/promise'
 import { 
   ALGORAND_MIN_TX_FEE,
   makePaymentTxnWithSuggestedParams,
@@ -30,11 +29,11 @@ export async function setup(provider: Provider, {
   
   const txnFormater = new TxnFormatter(provider)
 
-  const { appNftBalance, params, account } = await resolveObject({
-    appNftBalance: addressAssetBalance(provider.indexer, state.contractAddress, state.nftIndex),
-    params: provider.algod.getTransactionParams().do(),
-    account: provider.algod.accountInformation(state.creatorAddress).do()
-  })
+  const [appNftBalance, params, account] = await Promise.all([
+    addressAssetBalance(provider.indexer, state.contractAddress, state.nftIndex),
+    provider.algod.getTransactionParams().do(),
+    provider.algod.accountInformation(state.creatorAddress).do()
+  ])
 
   if (appNftBalance !== -1) {
     throw new Error('The listing is already set.')

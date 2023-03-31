@@ -8,7 +8,6 @@ import {
   encodeUint64,
 } from "algosdk"
 import { convertProgram } from "../../functions/program"
-import { resolveObject } from '../../functions/promise'
 
 import acApprovalProgram from '../../contracts/acFixedBid/approval'
 import acClearProgram from '../../contracts/acFixedBid/clearState'
@@ -72,10 +71,10 @@ export async function deploy(provider: Provider, {
 
   const txnFormater = new TxnFormatter(provider)
 
-  const { params, account } = await resolveObject({
-    params: provider.algod.getTransactionParams().do(),
-    account: provider.algod.accountInformation(sellerAddress).do()
-  })
+  const [params, account] = await Promise.all([
+    provider.algod.getTransactionParams().do(),
+    provider.algod.accountInformation(sellerAddress).do()
+  ])
 
   params.fee = ALGORAND_MIN_TX_FEE
   params.flatFee = true
