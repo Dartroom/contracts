@@ -11,7 +11,6 @@ import { hashAbiMethod } from "../../functions/abi"
 import { getGlobalState } from './getGlobalState'
 import { addressAssetBalance } from "../../functions/balance"
 import { TxnFormatter } from "../../functions/txn"
-import { resolveObject } from '../../functions/promise'
 
 export interface BuyFixedBidParams {
   appId: number
@@ -35,12 +34,12 @@ export async function buy(provider: Provider, {
   
   const state = await getGlobalState(provider,{ appId })
 
-  const { appNftBalance, buyerNftBalance, params, account } = await resolveObject({
-    appNftBalance: addressAssetBalance(provider.indexer, state.contractAddress, state.nftIndex),
-    buyerNftBalance: addressAssetBalance(provider.indexer, buyerAddress, state.nftIndex),
-    params: provider.algod.getTransactionParams().do(),
-    account: provider.algod.accountInformation(buyerAddress).do()
-  })
+  const [appNftBalance, buyerNftBalance, params, account] = await Promise.all([
+    addressAssetBalance(provider.indexer, state.contractAddress, state.nftIndex),
+    addressAssetBalance(provider.indexer, buyerAddress, state.nftIndex),
+    provider.algod.getTransactionParams().do(),
+    provider.algod.accountInformation(buyerAddress).do()
+  ])
 
   if (appNftBalance === -1) {
     throw new Error('The listing still needs to be set up. It is currently not opted into the NFT.')

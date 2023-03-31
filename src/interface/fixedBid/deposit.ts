@@ -2,7 +2,6 @@ import { Provider } from "../../contracts"
 import { getGlobalState } from './getGlobalState'
 import { addressAssetBalance } from "../../functions/balance"
 import { TxnFormatter } from "../../functions/txn"
-import { resolveObject } from '../../functions/promise'
 import {
   ALGORAND_MIN_TX_FEE,
   makeAssetTransferTxnWithSuggestedParams
@@ -24,12 +23,12 @@ export async function deposit(provider: Provider, {
 
   const state = await getGlobalState(provider,{ appId })
 
-  const { appNftBalance, creatorNftBalance, params, account } = await resolveObject({
-    appNftBalance: addressAssetBalance(provider.indexer, state.contractAddress, state.nftIndex),
-    creatorNftBalance: addressAssetBalance(provider.indexer, state.creatorAddress, state.nftIndex),
-    params: provider.algod.getTransactionParams().do(),
-    account: provider.algod.accountInformation(state.creatorAddress).do()
-  })
+  const [appNftBalance, creatorNftBalance, params, account] = await Promise.all([
+    addressAssetBalance(provider.indexer, state.contractAddress, state.nftIndex),
+    addressAssetBalance(provider.indexer, state.creatorAddress, state.nftIndex),
+    provider.algod.getTransactionParams().do(),
+    provider.algod.accountInformation(state.creatorAddress).do()
+  ])
   
   if (appNftBalance === -1) {
     throw new Error('The listing still needs to be set up. It is currently not opted into the NFT.')
