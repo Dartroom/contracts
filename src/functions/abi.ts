@@ -8,8 +8,17 @@ function hexToBytes (hex: string) {
   return bytes;
 }
 
-function hashAbiMethod (method: string) {
-  return new Uint8Array(hexToBytes(sha512_256(method).substring(0, 8)))
+function hashAbiMethod (method: string): Uint8Array
+function hashAbiMethod (method: string, encoding: BufferEncoding): string
+function hashAbiMethod (method: string, encoding?: BufferEncoding) {
+
+  const bytes = hexToBytes(sha512_256(method).substring(0, 8))
+
+  if (!encoding) {
+    return new Uint8Array(bytes)
+  }
+
+  return Buffer.from(bytes).toString(encoding)
 }
 
 export { hashAbiMethod }

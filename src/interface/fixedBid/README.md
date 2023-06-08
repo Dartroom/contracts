@@ -11,6 +11,8 @@ Sell a number of NFTs for a fixed price in either Algorand or ASA currencies (AC
 - [Buy](#buy)
 - [Destroy](#destory)
 - [Get Global State](#get-global-state)
+- [Get Status](#get-status)
+- [Get History](#get-history)
 
 # Deploy
 
@@ -27,3 +29,7 @@ Sell a number of NFTs for a fixed price in either Algorand or ASA currencies (AC
 # Destroy
 
 # Get Global State
+
+# Get status
+
+# Get History

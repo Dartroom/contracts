@@ -3,9 +3,10 @@ import algosdk from "algosdk";
 interface StateValueObject {
   key: string
   value: {
-    bytes: string
-    type: number
-    uint: number
+    bytes?: string
+    type?: number
+    uint?: number
+    action?: number
   }
 }
 
@@ -22,7 +23,7 @@ function encodeStateAddress (address: string): string {
 export function getGlobalByte(state: GlobalState, key: string): string {
   const stateValue = findState(state, key)
 
-  if (stateValue) {
+  if (stateValue && stateValue.value.bytes) {
     return stateValue.value.bytes
   } else {
     return ""
@@ -32,7 +33,7 @@ export function getGlobalByte(state: GlobalState, key: string): string {
 export function getGlobalUint(state: GlobalState, key: string): number {
   const stateValue = findState(state, key)
 
-  if (stateValue) {
+  if (stateValue && stateValue.value.uint) {
     return stateValue.value.uint
   } else {
     return -1
@@ -42,7 +43,7 @@ export function getGlobalUint(state: GlobalState, key: string): number {
 export function getGlobalAddress(state: GlobalState, key: string): string {
   const stateValue = findState(state, key)
 
-  if (stateValue) {
+  if (stateValue && stateValue.value.bytes) {
     return encodeStateAddress(stateValue.value.bytes)
   } else {
     return ""
