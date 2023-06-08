@@ -7,6 +7,7 @@ import { updatePrice, UpdatePriceFixedBidParams } from './updatePrice'
 import { destroy, DestroyFixedBidParams } from './destroy'
 import { getGlobalState, GetGlobalStateFixedBidParams } from './getGlobalState'
 import { getStatus, GetStatusFixedBidParams } from './getStatus'
+import { getHistory, GetHistoryFixedBidParams } from './getHistory'
 import { Contracts, Provider } from '../../contracts'
 import type { ExtendOrDefault } from "../../contracts"
 
@@ -148,6 +149,8 @@ export class FixedBid<E extends boolean, B extends 'Uint8Array' | 'Base64', S ex
   /**
    * Fetches and parses the Global State of the listing contract and returns the info in an object.
    * 
+   * If the contract is already deleted, the global state can no longer be fetched directly from the Algorand Indexer. If that is the case this function will fall back to the `getHistory` function to parse the global state based on the transaction history.
+   * 
    * @param {number} params.appId - Application index of the listing contract. 
    * @returns Promise<GlobalState> 
    */
@@ -156,9 +159,35 @@ export class FixedBid<E extends boolean, B extends 'Uint8Array' | 'Base64', S ex
   }
 
   /**
+   * Fetches the Global state alongside the contract's current NFT and currency balances.
    * 
+   * The `isSetup` property can be used to check if the contract is operational. If that is not the case, no other actions can be taken then `setup` or `destroy`.
+   * 
+   * If the contract is set up, the `balance` field can be used to check if there are currently tokens for sale.
+   * 
+   * @param {number} params.appId - Application index of the listing contract.
+   * @returns Promise<{ appId: number, state: GlobalState, isSetup: boolean, balance: number }>
    */
   getStatus(params: GetStatusFixedBidParams) {
     return getStatus(this.provider, params)
+  }
+
+  /**
+   * Fetches the full transaction history of the contract from the Indexer and returns an array of all contract events along side the global state based on the events.
+   * 
+   * Events can be filtered by the following types defind on the `history.events[i].type` property:
+   * - `deploy`
+   * - `setup`
+   * - `deposit`
+   * - `extract`
+   * - `updatePrice`
+   * - `buy`
+   * - `destroy`
+   * 
+   * @param {number} params.appId - Application index of the listing contract. 
+   * @returns Promise<{ appId: number, state: GlobalState, events: Array<HistoryEvent> }> 
+   */
+  getHistory(params: GetHistoryFixedBidParams) {
+    return getHistory(this.provider, params)
   }
 }

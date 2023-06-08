@@ -1,6 +1,6 @@
 {
   "name": "@dartroom/contracts",
-  "version": "0.2.3-alpha",
+  "version": "0.2.5-alpha",
   "description": "A package that includes all Dartroom's smart contracts written in TEAL, with complete interfaces in TypeScript to interact with them.",
   "main": "dist/index.js",
   "module": "dist/index.mjs",

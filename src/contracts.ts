@@ -144,7 +144,7 @@ export class Contracts<E extends boolean, B extends 'Uint8Array' | 'Base64', S e
   /**
    * Create a new Transaction formatter instance. With the formatter you can create a new transaction array in the same format as the contract package returns.
    */
-  newTxnFormater () {
+  newTxnFormatter () {
     return new TxnFormatter<E, B, S, A>(this)
   }
 }
