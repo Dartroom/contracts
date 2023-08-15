@@ -1,7 +1,4 @@
-# Contracts
-[![npm version](https://badge.fury.io/js/@dartroom%2Fcontracts.svg)](https://badge.fury.io/js/@dartroom%2Fcontracts)
-[![Publish](https://github.com/Dartroom/contracts/actions/workflows/publish.yml/badge.svg)](https://github.com/Dartroom/contracts/actions/workflows/publish.yml)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 
 A package that includes all Dartroom's smart contracts written in TEAL, with complete interfaces in TypeScript to interact with them.
 
@@ -17,6 +14,10 @@ Planned future expansion:
 The interface gets the parameters for the specific contract function and returns an array of transactions that only need to be signed before they can be committed to the network.
 
 ## Contracts:
+[![npm version](https://badge.fury.io/js/@dartroom%2Fcontracts.svg)](https://badge.fury.io/js/@dartroom%2Fcontracts)
+[![Publish](https://github.com/Dartroom/contracts/actions/workflows/publish.yml/badge.svg)](https://github.com/Dartroom/contracts/actions/workflows/publish.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 - [Fixed bid](src/interface/fixedBid/README.md)
 - [ASA currency revenue sink](src/interface/acRevenueSink/README.md)
 
