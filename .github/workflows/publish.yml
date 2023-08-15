@@ -51,7 +51,7 @@ jobs:
       - name: build package
         run: |
              npm ci 
-             npm build 
+             npm run build 
       - name: Publish to NPM
         uses: actions/setup-node@v3
         with:
