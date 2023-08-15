@@ -1,3 +1,8 @@
+# Contracts
+[![npm version](https://badge.fury.io/js/@dartroom%2Fcontracts.svg)](https://badge.fury.io/js/@dartroom%2Fcontracts)
+[![Publish](https://github.com/Dartroom/contracts/actions/workflows/publish.yml/badge.svg)](https://github.com/Dartroom/contracts/actions/workflows/publish.yml)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 A package that includes all Dartroom's smart contracts written in TEAL, with complete interfaces in TypeScript to interact with them.
 
 The package includes the following:
