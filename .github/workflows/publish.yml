@@ -1,0 +1,81 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - v*
+jobs:
+  job1:
+    name: fetch tag and update Package
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout files
+        uses: actions/checkout@v3
+
+      - name: Get tag
+        id: tag
+        uses: dawidd6/action-get-tag@v1
+        with:
+          strip_v: true
+
+      - name: Update version
+        uses: deef0000dragon1/json-edit-action@v1
+        env:
+          KEY: version
+          VALUE: ${{ steps.tag.outputs.tag }}
+          FILE: package.json
+
+      - name: Commit changes
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: Update version
+          title: Update version
+          body: Update version to ${{ steps.tag.outputs.tag }}
+          branch: update-version-${{ steps.tag.outputs.tag }}
+          base: master
+          signoff: true
+          draft: false
+    outputs:
+      tag: ${{ steps.tag.outputs.tag }}
+      # Publish to the NPM registry
+  job2:
+    needs: job1
+    name: Publishing to Repositories(NPM & GitHub Packages)
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout files
+        uses: actions/checkout@v3
+      - name: build package
+        run: |
+             npm ci 
+             npm build 
+      - name: Publish to NPM
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16.x'
+          registry-url: 'https://registry.npmjs.org'
+          scope: '@dartroom'
+
+      - run: |
+               git fetch origin 
+               git checkout update-version-${{needs.job1.outputs.tag }}
+               npm publish --access public
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Publish to GitHub Packages
+        uses: actions/setup-node@v3
+        with:
+          node-version: '16.x'
+          registry-url: 'https://npm.pkg.github.com'
+          scope: '@dartroom'
+
+      - run: | 
+             git fetch origin 
+             git checkout update-version-${{ needs.job1.outputs.tag}}
+             npm publish
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.GITHUB_TOKEN  }}
